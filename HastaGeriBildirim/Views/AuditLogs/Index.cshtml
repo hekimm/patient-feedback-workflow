@@ -1,0 +1,76 @@
+@model List<AuditLog>
+@{
+    ViewData["Title"] = "Audit Log";
+}
+
+<h2><i class="bi bi-journal-text"></i> Audit Log</h2>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Başlangıç</label>
+                <input type="date" name="startDate" class="form-control" value="@ViewBag.StartDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bitiş</label>
+                <input type="date" name="endDate" class="form-control" value="@ViewBag.EndDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Entity</label>
+                <input type="text" name="entityName" class="form-control" value="@ViewBag.EntityName" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Entity</th>
+                        <th>Action</th>
+                        <th>Açıklama</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td><small>@log.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")</small></td>
+                            <td>
+                                <span class="badge bg-secondary">@log.EntityName</span>
+                                @if (log.EntityId.HasValue)
+                                {
+                                    <small class="text-muted">#@log.EntityId</small>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge bg-info">@log.ActionCode</span>
+                            </td>
+                            <td><small>@log.ChangeDescription</small></td>
+                            <td><small class="text-muted">@log.IpAddress</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

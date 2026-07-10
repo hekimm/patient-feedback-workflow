@@ -1,0 +1,74 @@
+@model List<SurveyTemplate>
+@{
+    ViewData["Title"] = "Anket Şablonları";
+}
+
+<h2><i class="bi bi-file-text"></i> Anket Şablonları</h2>
+
+<form asp-action="Create" method="post" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Şablon Adı</label>
+                <input name="templateName" class="form-control" required maxlength="200" />
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Açıklama</label>
+                <input name="description" class="form-control" maxlength="500" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-plus-circle"></i> Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Şablon Adı</th>
+                        <th>Açıklama</th>
+                        <th>Durum</th>
+                        <th>Oluşturma</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var template in Model)
+                    {
+                        <tr>
+                            <td>@template.TemplateId</td>
+                            <td>@template.TemplateName</td>
+                            <td>@template.Description</td>
+                            <td>
+                                <span class="badge bg-@(template.IsActive ? "success" : "secondary")">
+                                    @(template.IsActive ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td>@template.CreatedAt.ToString("dd.MM.yyyy")</td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@template.TemplateId" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Detay
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

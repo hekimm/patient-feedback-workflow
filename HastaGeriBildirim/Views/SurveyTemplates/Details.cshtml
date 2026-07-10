@@ -1,0 +1,310 @@
+@model SurveyTemplateBuilderViewModel
+@{
+    ViewData["Title"] = "Şablon Detayı";
+    var version = Model.SelectedVersion;
+    var isDraft = version?.Status == "DRAFT";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-file-text"></i> @Model.Template.TemplateName</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Geri
+    </a>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-warning">@TempData["Message"]</div>
+}
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Şablon</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>ID:</strong> @Model.Template.TemplateId</p>
+                <p><strong>Durum:</strong> @(Model.Template.IsActive ? "Aktif" : "Pasif")</p>
+                <p><strong>Açıklama:</strong> @Model.Template.Description</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Versiyonlar</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                @foreach (var item in Model.Versions)
+                {
+                    <a asp-action="Details" asp-route-id="@Model.Template.TemplateId" asp-route-versionId="@item.VersionId"
+                       class="list-group-item list-group-item-action @(version?.VersionId == item.VersionId ? "active" : "")">
+                        <div class="d-flex justify-content-between">
+                            <span>@item.VersionLabel</span>
+                            <span class="badge bg-light text-dark">@item.Status</span>
+                        </div>
+                        <small>@item.QuestionCount soru</small>
+                    </a>
+                }
+            </div>
+            <div class="card-footer d-grid gap-2">
+                <form asp-action="CreateVersion" method="post">
+                    <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-layers"></i> Yeni Versiyon
+                    </button>
+                </form>
+                @if (version != null && isDraft && Model.Questions.Any())
+                {
+                    <form asp-action="PublishVersion" method="post">
+                        <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                        <input type="hidden" name="versionId" value="@version.VersionId" />
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-check-circle"></i> Yayınla
+                        </button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        @if (version == null)
+        {
+            <div class="alert alert-info">Bu şablon için versiyon bulunamadı.</div>
+        }
+        else
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Yeni Soru</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="AddQuestion" method="post">
+                        <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                        <input type="hidden" name="versionId" value="@version.VersionId" />
+                        <fieldset disabled="@(!isDraft)">
+                            <div class="row g-3">
+                                <div class="col-md-3">
+                                    <label class="form-label">Tip</label>
+                                    <select name="questionType" class="form-select">
+                                        <option value="SMILEY">5'li Memnuniyet Ölçeği</option>
+                                        <option value="STAR">5'li Puanlama Ölçeği</option>
+                                        <option value="NPS">NPS</option>
+                                        <option value="CSAT">CSAT</option>
+                                        <option value="CES">CES</option>
+                                        <option value="MULTIPLE_CHOICE">Çoktan Seçmeli</option>
+                                        <option value="FREE_TEXT">Serbest Metin</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Metrik</label>
+                                    <select name="metricType" class="form-select">
+                                        <option value="">-</option>
+                                        <option value="NPS">NPS</option>
+                                        <option value="CSAT">CSAT</option>
+                                        <option value="CES">CES</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-7">
+                                    <label class="form-label">Soru (TR)</label>
+                                    <input name="textTr" class="form-control" required maxlength="500" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Soru (EN)</label>
+                                    <input name="textEn" class="form-control" maxlength="500" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Soru (AR)</label>
+                                    <input name="textAr" class="form-control" maxlength="500" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Min</label>
+                                    <input name="minValue" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label">Max</label>
+                                    <input name="maxValue" type="number" step="0.1" class="form-control" />
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <div class="form-check">
+                                        <input name="isRequired" value="true" class="form-check-input" type="checkbox" />
+                                        <label class="form-check-label">Zorunlu</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 d-flex align-items-end">
+                                    <div class="form-check">
+                                        <input name="isInitialQuestion" value="true" class="form-check-input" type="checkbox" />
+                                        <label class="form-check-label">Başlangıç sorusu</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-plus"></i> Ekle
+                                    </button>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Sorular</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var question in Model.Questions)
+                    {
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <span class="badge bg-secondary">@question.SortOrder</span>
+                                    <span class="badge bg-info">@question.QuestionType</span>
+                                    @if (question.IsInitialQuestion)
+                                    {
+                                        <span class="badge bg-success">Başlangıç</span>
+                                    }
+                                    <strong class="ms-2">@question.QuestionText</strong>
+                                </div>
+                                @if (isDraft)
+                                {
+                                    <form asp-action="DeleteQuestion" method="post">
+                                        <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                                        <input type="hidden" name="versionId" value="@version.VersionId" />
+                                        <input type="hidden" name="questionId" value="@question.QuestionId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+
+                            @if (Model.OptionsByQuestion.TryGetValue(question.QuestionId, out var options) && options.Any())
+                            {
+                                <div class="mt-2">
+                                    @foreach (var option in options)
+                                    {
+                                        <span class="badge bg-light text-dark border me-1">
+                                            @option.OptionText (@(option.NumericValue?.ToString("F1") ?? "-"))
+                                        </span>
+                                    }
+                                </div>
+                            }
+
+                            @if (isDraft && question.QuestionType == "MULTIPLE_CHOICE")
+                            {
+                                <form asp-action="AddOption" method="post" class="row g-2 mt-2">
+                                    <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                                    <input type="hidden" name="versionId" value="@version.VersionId" />
+                                    <input type="hidden" name="questionId" value="@question.QuestionId" />
+                                    <div class="col-md-7">
+                                        <input name="optionText" class="form-control form-control-sm" placeholder="Seçenek" required />
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input name="numericValue" type="number" step="0.1" class="form-control form-control-sm" placeholder="Puan" />
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Ekle</button>
+                                    </div>
+                                </form>
+                            }
+                        </div>
+                    }
+
+                    @if (!Model.Questions.Any())
+                    {
+                        <div class="alert alert-info">Bu versiyonda henüz soru yok.</div>
+                    }
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Dallanma Kuralları</h5>
+                </div>
+                <div class="card-body">
+                    @if (isDraft && Model.Questions.Count >= 2)
+                    {
+                        <form asp-action="AddBranchingRule" method="post" class="row g-2 mb-3">
+                            <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                            <input type="hidden" name="versionId" value="@version.VersionId" />
+                            <div class="col-md-3">
+                                <select name="sourceQuestionId" class="form-select form-select-sm">
+                                    @foreach (var q in Model.Questions)
+                                    {
+                                        <option value="@q.QuestionId">@q.QuestionCode</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select name="operatorCode" class="form-select form-select-sm">
+                                    <option value="LTE">&lt;=</option>
+                                    <option value="LT">&lt;</option>
+                                    <option value="EQ">=</option>
+                                    <option value="GTE">&gt;=</option>
+                                    <option value="GT">&gt;</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <input name="compareValue" type="number" step="0.1" class="form-control form-control-sm" required />
+                            </div>
+                            <div class="col-md-3">
+                                <select name="targetQuestionId" class="form-select form-select-sm">
+                                    @foreach (var q in Model.Questions)
+                                    {
+                                        <option value="@q.QuestionId">@q.QuestionCode</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-sm btn-outline-primary w-100">Kural Ekle</button>
+                            </div>
+                        </form>
+                    }
+
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Kaynak</th>
+                                    <th>Koşul</th>
+                                    <th>Hedef</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var rule in Model.BranchingRules)
+                                {
+                                    <tr>
+                                        <td>@rule.SourceQuestionCode</td>
+                                        <td>@rule.OperatorCode @rule.CompareNumericValue</td>
+                                        <td>@rule.TargetQuestionCode</td>
+                                        <td class="text-end">
+                                            @if (isDraft)
+                                            {
+                                                <form asp-action="DeleteBranchingRule" method="post">
+                                                    <input type="hidden" name="templateId" value="@Model.Template.TemplateId" />
+                                                    <input type="hidden" name="versionId" value="@version.VersionId" />
+                                                    <input type="hidden" name="branchingRuleId" value="@rule.BranchingRuleId" />
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    @if (!Model.BranchingRules.Any())
+                    {
+                        <div class="alert alert-info">Dallanma kuralı yok.</div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

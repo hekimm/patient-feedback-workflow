@@ -1,0 +1,38 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Kiosk";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kiosk Anket</title>
+    <link rel="stylesheet" href="~/css/survey.css" asp-append-version="true" />
+</head>
+<body class="survey-body">
+    <main class="survey-shell">
+        @await Html.PartialAsync("_SurveyBrand")
+        <div class="survey-card survey-center">
+            <h1 class="survey-title">Hasta Memnuniyet Kiosku</h1>
+            <p class="survey-lead survey-muted">Anket bağlantısındaki token değerini girerek yeni değerlendirmeyi başlatın.</p>
+
+            @if (ViewBag.ErrorMessage != null)
+            {
+                <div class="survey-alert">@ViewBag.ErrorMessage</div>
+            }
+
+            <form asp-action="Start" method="post" class="survey-stack" style="margin-top:24px">
+                <input name="token" class="survey-input" placeholder="Token" required />
+                <select name="lang" class="survey-input">
+                    <option value="tr">Türkçe</option>
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                </select>
+                <button type="submit" class="survey-btn">Başlat</button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

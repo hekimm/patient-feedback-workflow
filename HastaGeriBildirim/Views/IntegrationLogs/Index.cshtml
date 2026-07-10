@@ -1,0 +1,94 @@
+@model List<IntegrationLog>
+@{
+    ViewData["Title"] = "Entegrasyon Logları";
+}
+
+<h2><i class="bi bi-arrow-left-right"></i> Entegrasyon Logları</h2>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Yön</label>
+                <select name="direction" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="INBOUND">Gelen</option>
+                    <option value="OUTBOUND">Giden</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                <select name="isSuccess" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="true">Başarılı</option>
+                    <option value="false">Hatalı</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Yön</th>
+                        <th>Endpoint</th>
+                        <th class="text-center">HTTP Status</th>
+                        <th class="text-center">Durum</th>
+                        <th>Hata</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model)
+                    {
+                        <tr>
+                            <td><small>@log.CreatedAt.ToString("dd.MM.yyyy HH:mm:ss")</small></td>
+                            <td>
+                                <span class="badge bg-@(log.Direction == "INBOUND" ? "primary" : "secondary")">
+                                    @log.Direction
+                                </span>
+                            </td>
+                            <td><small>@log.Endpoint</small></td>
+                            <td class="text-center">
+                                @if (log.HttpStatusCode.HasValue)
+                                {
+                                    <span class="badge bg-@(log.HttpStatusCode < 300 ? "success" : log.HttpStatusCode < 500 ? "warning" : "danger")">
+                                        @log.HttpStatusCode
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (log.IsSuccess)
+                                {
+                                    <i class="bi bi-check-circle text-success"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle text-danger"></i>
+                                }
+                            </td>
+                            <td><small class="text-danger">@log.ErrorMessage</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

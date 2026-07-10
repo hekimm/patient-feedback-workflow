@@ -1,0 +1,86 @@
+@{
+    var roleCode = ViewBag.RoleCode as string;
+    var isSysAdmin = roleCode == "SYS_ADMIN";
+    var isQuality = roleCode == "QUALITY_MANAGER";
+    var isUnit = roleCode == "UNIT_MANAGER";
+    var canSeeOperations = isSysAdmin || isQuality || isUnit;
+    var canSeeSurveyOps = isSysAdmin || isQuality;
+    var currentController = (string?)ViewContext.RouteData.Values["controller"] ?? "";
+    var currentAction = (string?)ViewContext.RouteData.Values["action"] ?? "";
+
+    string Active(string controller, string? action = null)
+    {
+        if (!string.Equals(currentController, controller, StringComparison.OrdinalIgnoreCase))
+            return "";
+
+        if (!string.IsNullOrWhiteSpace(action) &&
+            !string.Equals(currentAction, action, StringComparison.OrdinalIgnoreCase))
+            return "";
+
+        return "active";
+    }
+}
+
+<aside class="probel-sidebar" id="sidebar-wrapper" aria-label="Ana menü">
+    <div class="sidebar-heading">
+        @await Html.PartialAsync("_ProbelBrand")
+    </div>
+    <div class="probel-sidebar-caption">Operasyon</div>
+    <div class="list-group list-group-flush probel-nav">
+        @if (canSeeOperations)
+        {
+            <a asp-controller="Dashboard" asp-action="Index" class="list-group-item list-group-item-action @Active("Dashboard")">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a asp-controller="Feedback" asp-action="Index" class="list-group-item list-group-item-action @Active("Feedback")">
+                <i class="bi bi-chat-left-text"></i> Geri Bildirimler
+            </a>
+            <a asp-controller="ServiceRecovery" asp-action="Index" class="list-group-item list-group-item-action @Active("ServiceRecovery")">
+                <i class="bi bi-tools"></i> Hizmet Telafisi
+            </a>
+            <a asp-controller="Alerts" asp-action="Index" class="list-group-item list-group-item-action @Active("Alerts")">
+                <i class="bi bi-exclamation-triangle"></i> Alertler
+            </a>
+        }
+
+        @if (canSeeSurveyOps)
+        {
+            <div class="probel-sidebar-caption">Anket İşlemleri</div>
+            <a asp-controller="ClinicalEvents" asp-action="Index" class="list-group-item list-group-item-action @Active("ClinicalEvents")">
+                <i class="bi bi-calendar-event"></i> Klinik Olaylar
+            </a>
+            <a asp-controller="SurveyInvitations" asp-action="Index" class="list-group-item list-group-item-action @Active("SurveyInvitations")">
+                <i class="bi bi-envelope"></i> Anket Davetleri
+            </a>
+            <a asp-controller="SurveyTemplates" asp-action="Index" class="list-group-item list-group-item-action @Active("SurveyTemplates")">
+                <i class="bi bi-file-text"></i> Anket Şablonları
+            </a>
+        }
+
+        @if (isSysAdmin)
+        {
+            <div class="probel-sidebar-caption">Yönetim</div>
+            <a asp-controller="Channels" asp-action="Index" class="list-group-item list-group-item-action @Active("Channels")">
+                <i class="bi bi-broadcast"></i> Kanallar
+            </a>
+            <a asp-controller="Users" asp-action="Index" class="list-group-item list-group-item-action @Active("Users")">
+                <i class="bi bi-people"></i> Kullanıcılar
+            </a>
+            <a asp-controller="Roles" asp-action="Index" class="list-group-item list-group-item-action @Active("Roles")">
+                <i class="bi bi-shield-check"></i> Roller
+            </a>
+            <a asp-controller="Compliance" asp-action="ConsentRecords" class="list-group-item list-group-item-action @Active("Compliance", "ConsentRecords")">
+                <i class="bi bi-shield-lock"></i> KVKK Kayıtları
+            </a>
+            <a asp-controller="Compliance" asp-action="DataSubjectRequests" class="list-group-item list-group-item-action @Active("Compliance", "DataSubjectRequests")">
+                <i class="bi bi-person-badge"></i> Veri Talepleri
+            </a>
+            <a asp-controller="AuditLogs" asp-action="Index" class="list-group-item list-group-item-action @Active("AuditLogs")">
+                <i class="bi bi-journal-text"></i> Audit Log
+            </a>
+            <a asp-controller="IntegrationLogs" asp-action="Index" class="list-group-item list-group-item-action @Active("IntegrationLogs")">
+                <i class="bi bi-arrow-left-right"></i> Entegrasyon Logları
+            </a>
+        }
+    </div>
+</aside>

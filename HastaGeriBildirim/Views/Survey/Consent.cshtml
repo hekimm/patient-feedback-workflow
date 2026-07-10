@@ -1,0 +1,46 @@
+@model SurveyConsentViewModel
+@{
+    Layout = null;
+    var lang = Model.Lang;
+}
+
+<!DOCTYPE html>
+<html lang="@lang" dir="@(lang == "ar" ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@SurveyTexts.Get(lang, "consent_title")</title>
+    <link rel="stylesheet" href="~/css/survey.css" asp-append-version="true" />
+</head>
+<body class="survey-body">
+    <main class="survey-shell">
+        @await Html.PartialAsync("_SurveyBrand")
+        <div class="survey-card">
+            <h1 class="survey-title">@SurveyTexts.Get(lang, "consent_title")</h1>
+
+            <div class="survey-alert" style="max-height: 400px; overflow-y: auto;">
+                <p>@Html.Raw(Model.ConsentText?.Replace("\n", "<br/>"))</p>
+            </div>
+
+            <form asp-action="Consent" method="post" class="survey-stack" style="margin-top:24px">
+                <input type="hidden" asp-for="Token" />
+                <input type="hidden" asp-for="Lang" />
+
+                <label class="survey-check">
+                    <input asp-for="IsConsentGiven" type="checkbox" required />
+                    @SurveyTexts.Get(lang, "consent_checkbox")
+                </label>
+
+                <label class="survey-check">
+                    <input asp-for="IsAnonymous" type="checkbox" />
+                    @SurveyTexts.Get(lang, "anonymous_checkbox")
+                </label>
+
+                <button type="submit" class="survey-btn">
+                    @SurveyTexts.Get(lang, "continue_button")
+                </button>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

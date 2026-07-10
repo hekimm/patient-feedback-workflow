@@ -1,0 +1,42 @@
+# Build outputs
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Local runtime/log files
+logs/
+*.log
+hgb-ui.*.log
+
+# User/machine specific files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Secrets and local overrides
+appsettings.Development.json
+appsettings.Local.json
+!HastaGeriBildirim/appsettings.Production.json
+*.local.json
+.env
+.env.*
+!.env.example
+
+# Test/report artifacts
+TestResults/
+coverage/
+coverage.*
+*.trx
+
+# NuGet/packages
+*.nupkg
+packages/
+
+# OS noise
+Thumbs.db
+Desktop.ini
+.DS_Store

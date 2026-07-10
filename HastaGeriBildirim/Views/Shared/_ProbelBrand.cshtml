@@ -1,0 +1,21 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var hospitalName = Configuration["Branding:HospitalName"];
+    var unitName = Configuration["Branding:HospitalUnitName"];
+    var hospitalType = Configuration["Branding:HospitalType"];
+    hospitalName = string.IsNullOrWhiteSpace(hospitalName) ? "T.C. Devlet Hastanesi" : hospitalName;
+    unitName = string.IsNullOrWhiteSpace(unitName) ? "Kalite ve Hasta Deneyimi Birimi" : unitName;
+    hospitalType = string.IsNullOrWhiteSpace(hospitalType) ? "Devlet Hastanesi" : hospitalType;
+}
+
+<div class="probel-brand" aria-label="Probel HBYS">
+    <img class="probel-mark-img" src="~/img/probel-p-logo.svg" asp-append-version="true" alt="Probel" />
+    <div class="probel-brand-text">
+        <strong>PROBEL</strong>
+        <span>HBYS</span>
+    </div>
+</div>
+<div class="probel-institution">
+    <strong>@hospitalName</strong>
+    <span>@hospitalType · @unitName</span>
+</div>

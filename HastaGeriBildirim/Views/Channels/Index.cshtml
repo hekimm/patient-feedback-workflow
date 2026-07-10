@@ -1,0 +1,57 @@
+@model List<Channel>
+@{
+    ViewData["Title"] = "Kanallar";
+}
+
+<h2><i class="bi bi-broadcast"></i> Kanallar</h2>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Kanal Kodu</th>
+                        <th>Kanal Adı</th>
+                        <th>Durum</th>
+                        <th>Oluşturma</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var channel in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge bg-info">@channel.ChannelCode</span>
+                            </td>
+                            <td>@channel.ChannelName</td>
+                            <td>
+                                <span class="badge bg-@(channel.IsActive ? "success" : "secondary")">
+                                    @(channel.IsActive ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td>@channel.CreatedAt.ToString("dd.MM.yyyy")</td>
+                            <td class="text-end">
+                                <form asp-action="Toggle" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@channel.ChannelId" />
+                                    <input type="hidden" name="enable" value="@(!channel.IsActive)" />
+                                    <button type="submit" class="btn btn-sm @(channel.IsActive ? "btn-outline-secondary" : "btn-outline-success")">
+                                        @(channel.IsActive ? "Pasifleştir" : "Aktifleştir")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

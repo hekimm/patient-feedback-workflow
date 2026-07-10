@@ -1,0 +1,50 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var hospitalName = Configuration["Branding:HospitalName"];
+    var unitName = Configuration["Branding:HospitalUnitName"];
+    var quickLinks = Configuration.GetSection("Branding:PublicQuickLinks").GetChildren()
+        .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+        .ToList();
+    hospitalName = string.IsNullOrWhiteSpace(hospitalName) ? "T.C. Devlet Hastanesi" : hospitalName;
+    unitName = string.IsNullOrWhiteSpace(unitName) ? "Kalite ve Hasta Deneyimi Birimi" : unitName;
+
+    string QuickLinkLabel(string key) => key.Replace("_", " ") switch
+    {
+        "e-Nabiz" => "e-Nabız",
+        "SABIM 184" => "SABİM 184",
+        "CIMER" => "CİMER",
+        _ => key.Replace("_", " ")
+    };
+}
+
+<header class="survey-brand" aria-label="Kurum bilgisi">
+    <div class="survey-brand-main">
+        <div class="probel-brand compact" aria-label="Probel HBYS">
+            <img class="probel-mark-img" src="~/img/probel-p-logo.svg" asp-append-version="true" alt="Probel" />
+            <div class="probel-brand-text">
+                <strong>PROBEL</strong>
+                <span>HBYS</span>
+            </div>
+        </div>
+        <div class="survey-institution">
+            <strong>@hospitalName</strong>
+            <span>@unitName</span>
+        </div>
+    </div>
+    <nav class="survey-public-links" aria-label="Kamu sağlık hızlı erişim">
+        @if (quickLinks.Any())
+        {
+            @foreach (var link in quickLinks)
+            {
+                <a href="@link.Value" rel="noopener">@QuickLinkLabel(link.Key)</a>
+            }
+        }
+        else
+        {
+            <a href="https://www.mhrs.gov.tr/" rel="noopener">MHRS</a>
+            <a href="https://enabiz.gov.tr/" rel="noopener">e-Nabız</a>
+            <a href="tel:184">SABİM 184</a>
+            <a href="tel:112">Acil 112</a>
+        }
+    </nav>
+</header>

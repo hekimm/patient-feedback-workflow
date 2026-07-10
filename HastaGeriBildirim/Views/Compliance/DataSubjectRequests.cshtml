@@ -1,0 +1,108 @@
+@model List<DataSubjectRequest>
+@{
+    ViewData["Title"] = "Veri Sahibi Talepleri";
+    var patients = ViewBag.Patients as List<ClinicalEventRepository.LookupItem> ?? new List<ClinicalEventRepository.LookupItem>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-person-badge"></i> Veri Sahibi Talepleri</h2>
+</div>
+
+<form asp-action="CreateDataSubjectRequest" method="post" class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Yeni Talep</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Hasta</label>
+                <select name="patientId" class="form-select" required>
+                    @foreach (var patient in patients)
+                    {
+                        <option value="@patient.Id">@patient.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Talep Tipi</label>
+                <select name="requestType" class="form-select">
+                    <option value="EXPORT">Veri Export</option>
+                    <option value="ANONYMIZE">Anonimleştirme</option>
+                    <option value="DELETE">Silme / Unutulma</option>
+                </select>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Not</label>
+                <input name="note" class="form-control" maxlength="500" />
+            </div>
+        </div>
+    </div>
+    <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Talep Oluştur
+        </button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hasta</th>
+                        <th>Tip</th>
+                        <th>Durum</th>
+                        <th>Talep Tarihi</th>
+                        <th>Tamamlanma</th>
+                        <th>Not</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var request in Model)
+                    {
+                        <tr>
+                            <td>@request.DsrId</td>
+                            <td>@request.PatientName</td>
+                            <td><span class="badge bg-info">@request.RequestType</span></td>
+                            <td>
+                                <span class="badge bg-@(request.RequestStatus == "COMPLETED" ? "success" : "warning")">
+                                    @request.RequestStatus
+                                </span>
+                            </td>
+                            <td>@request.RequestedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@(request.CompletedAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                            <td>@(request.ResolutionNote ?? request.RequestedByNote)</td>
+                            <td class="text-end">
+                                @if (request.RequestType == "EXPORT" && request.PatientId.HasValue)
+                                {
+                                    <a asp-action="ExportPatientData" asp-route-id="@request.DsrId" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-download"></i> Export
+                                    </a>
+                                }
+                                @if (request.RequestStatus != "COMPLETED")
+                                {
+                                    <form asp-action="CompleteDataSubjectRequest" method="post" class="d-inline">
+                                        <input type="hidden" name="id" value="@request.DsrId" />
+                                        <input type="hidden" name="resolutionNote" value="Talep uygulama üzerinden tamamlandı." />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-check-circle"></i> Tamamla
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">Talep bulunamadı.</div>
+        }
+    </div>
+</div>
+

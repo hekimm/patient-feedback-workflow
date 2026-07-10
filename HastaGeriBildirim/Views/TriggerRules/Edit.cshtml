@@ -1,0 +1,88 @@
+@model TriggerRule
+@{
+    ViewData["Title"] = "Tetikleme Kuralı";
+    var channels = ViewBag.Channels as List<Channel> ?? new List<Channel>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-gear"></i> @Model.EventType</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Geri
+    </a>
+</div>
+
+<form asp-action="Edit" method="post" class="card">
+    <div class="card-body">
+        <input type="hidden" asp-for="TriggerRuleId" />
+        <input type="hidden" asp-for="EventType" />
+        <input type="hidden" asp-for="SurveyTemplateId" />
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="PrimaryChannelId" class="form-label">Birincil Kanal</label>
+                <select asp-for="PrimaryChannelId" class="form-select">
+                    @foreach (var channel in channels)
+                    {
+                        <option value="@channel.ChannelId">@channel.ChannelName (@channel.ChannelCode)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="FallbackChannelId" class="form-label">Yedek Kanal</label>
+                <select asp-for="FallbackChannelId" class="form-select">
+                    <option value="">Yok</option>
+                    @foreach (var channel in channels)
+                    {
+                        <option value="@channel.ChannelId">@channel.ChannelName (@channel.ChannelCode)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="DelayMinutes" class="form-label">Gecikme (dk)</label>
+                <input asp-for="DelayMinutes" type="number" min="0" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="LowScoreThreshold" class="form-label">Düşük Puan Eşiği</label>
+                <input asp-for="LowScoreThreshold" type="number" min="0" max="10" step="0.1" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FrequencyCapCount" class="form-label">Cap Adedi</label>
+                <input asp-for="FrequencyCapCount" type="number" min="0" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="FrequencyCapDays" class="form-label">Cap Gün</label>
+                <input asp-for="FrequencyCapDays" type="number" min="1" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ReminderCount" class="form-label">Hatırlatma Adedi</label>
+                <input asp-for="ReminderCount" type="number" min="0" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ReminderIntervalMinutes" class="form-label">Hatırlatma Aralığı (dk)</label>
+                <input asp-for="ReminderIntervalMinutes" type="number" min="1" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ServiceRecoverySlaHours" class="form-label">Hizmet Telafisi SLA (saat)</label>
+                <input asp-for="ServiceRecoverySlaHours" type="number" min="1" class="form-control" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <div class="form-check">
+                    <input asp-for="ReminderEnabled" class="form-check-input" />
+                    <label asp-for="ReminderEnabled" class="form-check-label">Hatırlatma aktif</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-4">
+                    <input asp-for="IsEnabled" class="form-check-input" />
+                    <label asp-for="IsEnabled" class="form-check-label">Kural aktif</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer text-end">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-save"></i> Kaydet
+        </button>
+    </div>
+</form>
+

@@ -1,0 +1,272 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-speedometer2"></i> Dashboard</h2>
+    <div class="btn-group">
+        <a asp-action="Export" asp-route-format="xlsx" asp-route-startDate="@ViewBag.StartDate" asp-route-endDate="@ViewBag.EndDate" asp-route-trendPeriod="@ViewBag.TrendPeriod"
+           class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-excel"></i> Excel
+        </a>
+        <a asp-action="Export" asp-route-format="pdf" asp-route-startDate="@ViewBag.StartDate" asp-route-endDate="@ViewBag.EndDate" asp-route-trendPeriod="@ViewBag.TrendPeriod"
+           class="btn btn-outline-danger">
+            <i class="bi bi-file-earmark-pdf"></i> PDF
+        </a>
+    </div>
+</div>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Başlangıç Tarihi</label>
+                <input type="date" name="startDate" class="form-control" value="@ViewBag.StartDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bitiş Tarihi</label>
+                <input type="date" name="endDate" class="form-control" value="@ViewBag.EndDate" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Trend</label>
+                <select name="trendPeriod" class="form-select">
+                    <option value="DAY" selected="@(ViewBag.TrendPeriod == "DAY")">Günlük</option>
+                    <option value="WEEK" selected="@(ViewBag.TrendPeriod == "WEEK")">Haftalık</option>
+                    <option value="MONTH" selected="@(ViewBag.TrendPeriod == "MONTH")">Aylık</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h6 class="card-title">Toplam Yanıt</h6>
+                <h2 class="mb-0">@Model.TotalResponses</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h6 class="card-title">Ortalama Puan</h6>
+                <h2 class="mb-0">@Model.AverageOverallScore.ToString("F1")</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h6 class="card-title">Ortalama CSAT</h6>
+                <h2 class="mb-0">@Model.AverageCsat.ToString("F1")</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <h6 class="card-title">NPS Skoru</h6>
+                <h2 class="mb-0">@Model.NpsScore.ToString("F0")</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Memnuniyet Trendi</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Sentiment Dağılımı</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.SentimentDistribution.Any())
+                {
+                    @foreach (var item in Model.SentimentDistribution)
+                    {
+                        <div class="d-flex justify-content-between border-bottom py-2">
+                            <span>@item.Label</span>
+                            <strong>@item.ResponseCount</strong>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-muted">Sentiment verisi yok.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Bölüm Bazlı Performans</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Bölüm</th>
+                                <th class="text-center">Yanıt</th>
+                                <th class="text-center">Ort. Puan</th>
+                                <th class="text-center">Negatif</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var dept in Model.DepartmentSummaries)
+                            {
+                                <tr>
+                                    <td>@dept.DepartmentName</td>
+                                    <td class="text-center">@dept.ResponseCount</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-@(dept.AverageScore >= 7 ? "success" : dept.AverageScore >= 5 ? "warning" : "danger")">
+                                            @dept.AverageScore.ToString("F1")
+                                        </span>
+                                    </td>
+                                    <td class="text-center">@dept.NegativeCount</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Hekim Bazlı Performans</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Hekim</th>
+                                <th class="text-center">Yanıt</th>
+                                <th class="text-center">Ort. Puan</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doc in Model.DoctorSummaries)
+                            {
+                                <tr>
+                                    <td>@doc.DoctorName</td>
+                                    <td class="text-center">@doc.ResponseCount</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-@(doc.AverageScore >= 7 ? "success" : doc.AverageScore >= 5 ? "warning" : "danger")">
+                                            @doc.AverageScore.ToString("F1")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.KpiComparisons.Any())
+{
+    <div class="card mt-2">
+        <div class="card-header">
+            <h5 class="mb-0">KPI Hedefleri</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>KPI</th>
+                            <th class="text-center">Hedef</th>
+                            <th class="text-center">Gerçekleşen</th>
+                            <th class="text-center">Sapma</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var kpi in Model.KpiComparisons)
+                        {
+                            <tr>
+                                <td>@kpi.KpiCode</td>
+                                <td class="text-center">@kpi.TargetValue.ToString("F2")</td>
+                                <td class="text-center">@(kpi.ActualValue?.ToString("F2") ?? "-")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-@(kpi.Deviation.GetValueOrDefault() >= 0 ? "success" : "danger")">
+                                        @(kpi.Deviation?.ToString("+0.00;-0.00") ?? "-")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        const trendLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendData.Select(x => x.Date.ToString("dd.MM.yyyy"))));
+        const trendScores = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendData.Select(x => x.AverageScore)));
+        const trendResponses = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.TrendData.Select(x => x.ResponseCount)));
+
+        if (window.Chart && document.getElementById('trendChart')) {
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [
+                        {
+                            label: 'Ortalama Puan',
+                            data: trendScores,
+                            borderColor: '#0d6efd',
+                            backgroundColor: 'rgba(13, 110, 253, 0.12)',
+                            tension: 0.25,
+                            yAxisID: 'score'
+                        },
+                        {
+                            label: 'Yanıt',
+                            data: trendResponses,
+                            borderColor: '#198754',
+                            backgroundColor: 'rgba(25, 135, 84, 0.12)',
+                            tension: 0.25,
+                            yAxisID: 'count'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        score: { position: 'left', min: 0, max: 10 },
+                        count: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false } }
+                    }
+                }
+            });
+        }
+    </script>
+}

@@ -1,0 +1,23 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hata</title>
+    <link rel="stylesheet" href="~/css/survey.css" asp-append-version="true" />
+</head>
+<body class="survey-body">
+    <main class="survey-shell">
+        @await Html.PartialAsync("_SurveyBrand")
+        <div class="survey-card survey-center">
+            <h1 class="survey-title">Bağlantı Hatası</h1>
+            <p class="survey-lead survey-muted">@ViewBag.ErrorMessage</p>
+            <p class="survey-muted">Lütfen davet bağlantınızı kontrol edin veya sağlık kuruluşunuz ile iletişime geçin.</p>
+        </div>
+    </main>
+</body>
+</html>

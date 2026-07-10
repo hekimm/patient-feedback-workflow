@@ -1,0 +1,83 @@
+@model InvitationListViewModel
+@{
+    ViewData["Title"] = "Anket Davetleri";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-envelope"></i> Anket Davetleri</h2>
+</div>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-select">
+                    <option value="">Tümü</option>
+                    @foreach (var status in new[] { "CREATED", "SENT", "OPENED", "COMPLETED", "EXPIRED", "FAILED" })
+                    {
+                        <option value="@status" selected="@(Model.StatusFilter == status)">@status</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Hasta</th>
+                        <th>Olay</th>
+                        <th>Şablon</th>
+                        <th>Kanal</th>
+                        <th>Durum</th>
+                        <th>Gönderim</th>
+                        <th>Son Kullanım</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var invitation in Model.Invitations)
+                    {
+                        <tr>
+                            <td>@invitation.InvitationId</td>
+                            <td>@invitation.PatientName</td>
+                            <td><span class="badge bg-info">@invitation.EventType</span></td>
+                            <td>@invitation.TemplateName</td>
+                            <td>@invitation.ChannelName</td>
+                            <td>
+                                <span class="badge bg-@(invitation.Status == "COMPLETED" ? "success" : invitation.Status == "FAILED" ? "danger" : invitation.Status == "EXPIRED" ? "secondary" : "primary")">
+                                    @invitation.Status
+                                </span>
+                            </td>
+                            <td>@(invitation.SentAt?.ToString("dd.MM.yyyy HH:mm") ?? "-")</td>
+                            <td>@invitation.ExpiresAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="text-end">
+                                <a asp-action="Details" asp-route-id="@invitation.InvitationId" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Detay
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Invitations.Any())
+        {
+            <div class="alert alert-info">Kayıt bulunamadı.</div>
+        }
+    </div>
+</div>
+

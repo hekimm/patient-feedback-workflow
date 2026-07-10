@@ -1,0 +1,26 @@
+@{
+    Layout = null;
+    ViewData["Title"] = "Hata";
+}
+
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Islem tamamlanamadi</title>
+    <link rel="stylesheet" href="~/css/vendor-bootstrap.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-light">
+    <div class="container" style="max-width:720px;padding-top:10vh">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h1>Islem tamamlanamadi</h1>
+                <p class="text-muted">Beklenmeyen bir hata olustu. Kayit numarasi ile sistem yoneticisine basvurabilirsiniz.</p>
+                <code>@ViewBag.CorrelationId</code>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

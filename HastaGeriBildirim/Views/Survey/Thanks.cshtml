@@ -1,0 +1,34 @@
+@{
+    Layout = null;
+    var lang = (string?)ViewBag.Lang ?? "tr";
+    var kioskMode = (bool?)ViewBag.KioskMode ?? false;
+}
+
+<!DOCTYPE html>
+<html lang="@lang" dir="@(lang == "ar" ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@SurveyTexts.Get(lang, "thanks_title")</title>
+    <link rel="stylesheet" href="~/css/survey.css" asp-append-version="true" />
+    @if (kioskMode)
+    {
+        <meta http-equiv="refresh" content="8;url=/Kiosk" />
+    }
+</head>
+<body class="survey-body">
+    <main class="survey-shell">
+        @await Html.PartialAsync("_SurveyBrand")
+        <div class="survey-card survey-center">
+            <h1 class="survey-title">@SurveyTexts.Get(lang, "thanks_title")</h1>
+            <p class="survey-lead survey-muted">@SurveyTexts.Get(lang, "thanks_text")</p>
+            @if (kioskMode)
+            {
+                <div class="survey-actions">
+                    <a href="/Kiosk" class="survey-btn">Yeni Değerlendirme</a>
+                </div>
+            }
+        </div>
+    </main>
+</body>
+</html>

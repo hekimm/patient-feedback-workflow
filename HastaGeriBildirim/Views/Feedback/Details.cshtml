@@ -1,0 +1,123 @@
+@model FeedbackDetailViewModel
+@{
+    ViewData["Title"] = "Geri Bildirim Detayı";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-chat-left-text"></i> Geri Bildirim Detayı</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Geri
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Genel Bilgiler</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Hasta:</strong> @Model.PatientName</p>
+                <p><strong>Bölüm:</strong> @Model.DepartmentName</p>
+                <p><strong>Hekim:</strong> @Model.DoctorName</p>
+                <p><strong>Olay Tipi:</strong> @Model.EventType</p>
+                <p><strong>Tarih:</strong> @Model.CompletedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                @if (Model.IsAnonymous)
+                {
+                    <span class="badge bg-secondary">Anonim Katılım</span>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Puanlar</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Genel Puan:</strong> 
+                    <span class="badge bg-@(Model.OverallScore >= 7 ? "success" : Model.OverallScore >= 5 ? "warning" : "danger")">
+                        @Model.OverallScore?.ToString("F1")
+                    </span>
+                </p>
+                <p><strong>NPS:</strong> @Model.NpsScore?.ToString("F0")</p>
+                <p><strong>CSAT:</strong> @Model.CsatScore?.ToString("F0")</p>
+                <p><strong>Sentiment:</strong>
+                    @if (!string.IsNullOrEmpty(Model.SentimentLabel))
+                    {
+                        <span class="badge bg-@(Model.SentimentLabel == "POSITIVE" ? "success" : "danger")">
+                            @Model.SentimentLabel (@Model.SentimentScore?.ToString("F2"))
+                        </span>
+                    }
+                </p>
+                @if (Model.IsNegative)
+                {
+                    <span class="badge bg-danger">Negatif Geri Bildirim</span>
+                }
+            </div>
+        </div>
+
+        @if (Model.RelatedCaseId.HasValue)
+        {
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">Hizmet Telafisi</h5>
+                </div>
+                <div class="card-body">
+                    <p>Bu geri bildirim için hizmet telafisi case'i oluşturulmuştur.</p>
+                    <a asp-controller="ServiceRecovery" asp-action="Details" 
+                       asp-route-id="@Model.RelatedCaseId" class="btn btn-warning btn-sm">
+                        <i class="bi bi-tools"></i> Case'i Görüntüle
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Yanıtlar</h5>
+            </div>
+            <div class="card-body">
+                @foreach (var answer in Model.Answers)
+                {
+                    <div class="mb-4">
+                        <h6>@answer.QuestionText</h6>
+                        @if (answer.NumericValue.HasValue)
+                        {
+                            <p class="mb-0">
+                                <strong>Puan:</strong>
+                                <span class="badge bg-primary">@answer.NumericValue.Value</span>
+                            </p>
+                        }
+                        @if (!string.IsNullOrEmpty(answer.OptionText))
+                        {
+                            <p class="mb-0"><strong>Seçim:</strong> @answer.OptionText</p>
+                        }
+                        @if (!string.IsNullOrEmpty(answer.TextValue))
+                        {
+                            <div class="alert alert-light mt-2">
+                                <i class="bi bi-chat-quote"></i> @answer.TextValue
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (Model.Themes.Any())
+        {
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Temalar</h5>
+                </div>
+                <div class="card-body">
+                    @foreach (var theme in Model.Themes)
+                    {
+                        <span class="badge bg-info me-2">@theme</span>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>

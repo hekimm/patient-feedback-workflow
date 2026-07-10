@@ -1,0 +1,116 @@
+@model List<Alert>
+@{
+    ViewData["Title"] = "Alertler";
+}
+
+<h2><i class="bi bi-exclamation-triangle"></i> Alertler</h2>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Alert Tipi</label>
+                <select name="alertType" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="LOW_SCORE">Düşük Puan</option>
+                    <option value="SLA_BREACH">SLA İhlali</option>
+                    <option value="SYSTEM_ERROR">Sistem Hatası</option>
+                    <option value="MANUAL">Manuel</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Önem Derecesi</label>
+                <select name="severity" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="LOW">Düşük</option>
+                    <option value="MEDIUM">Orta</option>
+                    <option value="HIGH">Yüksek</option>
+                    <option value="CRITICAL">Kritik</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                <select name="status" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="OPEN">Açık</option>
+                    <option value="ACKNOWLEDGED">Onaylandı</option>
+                    <option value="CLOSED">Kapalı</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tip</th>
+                        <th>Önem</th>
+                        <th>Mesaj</th>
+                        <th>Tarih</th>
+                        <th>Durum</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var alert in Model)
+                    {
+                        <tr>
+                            <td>@alert.AlertId</td>
+                            <td>
+                                <span class="badge bg-secondary">@alert.AlertType</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-@(alert.Severity == "CRITICAL" ? "danger" : alert.Severity == "HIGH" ? "warning" : alert.Severity == "MEDIUM" ? "info" : "secondary")">
+                                    @alert.Severity
+                                </span>
+                            </td>
+                            <td>@alert.Message</td>
+                            <td>@alert.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                <span class="badge bg-@(alert.Status == "OPEN" ? "danger" : alert.Status == "ACKNOWLEDGED" ? "warning" : "success")">
+                                    @alert.Status
+                                </span>
+                            </td>
+                            <td>
+                                @if (alert.Status == "OPEN")
+                                {
+                                    <form asp-action="Acknowledge" asp-route-id="@alert.AlertId" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            <i class="bi bi-check"></i> Onayla
+                                        </button>
+                                    </form>
+                                }
+                                @if (alert.Status != "CLOSED")
+                                {
+                                    <form asp-action="Close" asp-route-id="@alert.AlertId" method="post" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="bi bi-x-circle"></i> Kapat
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

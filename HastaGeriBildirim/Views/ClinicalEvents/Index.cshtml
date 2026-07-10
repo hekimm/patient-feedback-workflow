@@ -1,0 +1,152 @@
+@model List<ClinicalEvent>
+@{
+    ViewData["Title"] = "Klinik Olaylar";
+    var patients = ViewBag.Patients as List<ClinicalEventRepository.LookupItem> ?? new();
+    var departments = ViewBag.Departments as List<ClinicalEventRepository.DepartmentLookup> ?? new();
+    var doctors = ViewBag.Doctors as List<ClinicalEventRepository.LookupItem> ?? new();
+    var services = ViewBag.Services as List<ClinicalEventRepository.LookupItem> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-calendar-event"></i> Klinik Olaylar</h2>
+    <form asp-action="ProcessNow" method="post">
+        <button type="submit" class="btn btn-outline-primary">
+            <i class="bi bi-play-circle"></i> Bekleyenleri İşle
+        </button>
+    </form>
+</div>
+
+@if (TempData["Message"] != null)
+{
+    <div class="alert alert-info">@TempData["Message"]</div>
+}
+
+<form asp-action="ManualCreate" method="post" class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Manuel HBYS Olayi</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Olay</label>
+                <select name="eventType" class="form-select">
+                    <option value="DISCHARGE">Taburcu</option>
+                    <option value="OUTPATIENT_COMPLETED">Muayene Tamamlandı</option>
+                    <option value="LAB_RESULT_DELIVERED">Tahlil Sonucu</option>
+                    <option value="APPOINTMENT_COMPLETED">Randevu Tamamlandı</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hasta</label>
+                <select name="patientId" class="form-select">
+                    @foreach (var patient in patients)
+                    {
+                        <option value="@patient.Id">@patient.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bölüm</label>
+                <select name="departmentId" class="form-select">
+                    @foreach (var department in departments)
+                    {
+                        <option value="@department.Id">@department.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hekim</label>
+                <select name="doctorId" class="form-select">
+                    <option value="">-</option>
+                    @foreach (var doctor in doctors)
+                    {
+                        <option value="@doctor.Id">@doctor.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Hizmet</label>
+                <select name="serviceId" class="form-select">
+                    <option value="">-</option>
+                    @foreach (var service in services)
+                    {
+                        <option value="@service.Id">@service.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check mt-4">
+                    <input name="isSensitive" value="true" class="form-check-input" type="checkbox" />
+                    <label class="form-check-label">Hassas vaka, anket gönderme</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-plus-circle"></i> Olay Oluştur
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Event ID</th>
+                        <th>Olay Tipi</th>
+                        <th>Olay Tarihi</th>
+                        <th>Oluşturulma</th>
+                        <th class="text-center">Hassas Vaka</th>
+                        <th class="text-center">Frequency Cap</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var evt in Model)
+                    {
+                        <tr>
+                            <td>@evt.EventId</td>
+                            <td>
+                                <span class="badge bg-info">@evt.EventType</span>
+                            </td>
+                            <td>@evt.EventDate.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>@evt.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="text-center">
+                                @if (evt.IsSensitiveCase)
+                                {
+                                    <span class="badge bg-danger">
+                                        <i class="bi bi-shield-exclamation"></i> Evet
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Hayır</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (evt.IsFrequencyCapped)
+                                {
+                                    <span class="badge bg-warning">Atlandı</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">-</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,100 @@
+@model List<User>
+@{
+    ViewData["Title"] = "Kullanıcılar";
+    var roles = ViewBag.Roles as List<HastaGeriBildirim.Repositories.UserRepository.RoleInfo> ?? new();
+}
+
+<h2><i class="bi bi-people"></i> Kullanıcılar</h2>
+
+<form asp-action="Create" method="post" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Kullanıcı Adı</label>
+                <input name="username" class="form-control" required maxlength="100" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Ad Soyad</label>
+                <input name="fullName" class="form-control" required maxlength="200" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">E-posta</label>
+                <input name="email" type="email" class="form-control" maxlength="200" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Şifre</label>
+                <input name="password" type="password" class="form-control" required minlength="8" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Rol</label>
+                <select name="roleId" class="form-select">
+                    @foreach (var role in roles)
+                    {
+                        <option value="@role.RoleId">@role.RoleName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-plus"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Kullanıcı Adı</th>
+                        <th>Ad Soyad</th>
+                        <th>E-posta</th>
+                        <th>Rol</th>
+                        <th class="text-center">Durum</th>
+                        <th>Kayıt Tarihi</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.Username</td>
+                            <td>@user.FullName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                <span class="badge bg-primary">@user.RoleCode</span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-@(user.IsActive ? "success" : "secondary")">
+                                    @(user.IsActive ? "Aktif" : "Pasif")
+                                </span>
+                            </td>
+                            <td>@user.CreatedAt.ToString("dd.MM.yyyy")</td>
+                            <td class="text-end">
+                                <form asp-action="Toggle" method="post" class="d-inline">
+                                    <input type="hidden" name="id" value="@user.UserId" />
+                                    <input type="hidden" name="enable" value="@(!user.IsActive)" />
+                                    <button type="submit" class="btn btn-sm @(user.IsActive ? "btn-outline-secondary" : "btn-outline-success")">
+                                        @(user.IsActive ? "Pasifleştir" : "Aktifleştir")
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,161 @@
+@model ServiceRecoveryDetailViewModel
+@{
+    ViewData["Title"] = "Hizmet Telafisi Detay";
+    var users = ViewBag.Users as List<User> ?? new List<User>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-tools"></i> Case #@Model.CaseId</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> Geri
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Case Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Durum:</strong> 
+                    <span class="badge bg-@(Model.Status == "OPEN" ? "primary" : "success")">
+                        @Model.Status
+                    </span>
+                </p>
+                <p><strong>Öncelik:</strong>
+                    <span class="badge bg-@(Model.Priority == "HIGH" ? "danger" : "warning")">
+                        @Model.Priority
+                    </span>
+                </p>
+                <p><strong>Oluşturma:</strong> @Model.CreatedAt.ToString("dd.MM.yyyy HH:mm")</p>
+                <p><strong>Bitiş Tarihi:</strong> @Model.DueDate?.ToString("dd.MM.yyyy HH:mm")</p>
+                <p><strong>Atanan:</strong> @(Model.AssignedToName ?? "Atanmamış")</p>
+                @if (Model.IsSlaBreached)
+                {
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> SLA Aşıldı!
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Hasta Bilgileri</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Hasta:</strong> @Model.PatientName</p>
+                <p><strong>Bölüm:</strong> @Model.DepartmentName</p>
+                <p><strong>Hekim:</strong> @Model.DoctorName</p>
+                <p><strong>Olay:</strong> @Model.EventType</p>
+                <p><strong>Puan:</strong>
+                    <span class="badge bg-danger">@Model.OverallScore?.ToString("F1")</span>
+                </p>
+                @if (!string.IsNullOrEmpty(Model.SentimentLabel))
+                {
+                    <p><strong>Sentiment:</strong>
+                        <span class="badge bg-danger">@Model.SentimentLabel</span>
+                    </p>
+                }
+            </div>
+        </div>
+
+        @if (Model.Status == "OPEN" || Model.Status == "IN_PROGRESS")
+        {
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0">İşlemler</h5>
+                </div>
+                <div class="card-body">
+                    <a asp-action="AddAction" asp-route-id="@Model.CaseId" class="btn btn-primary w-100 mb-2">
+                        <i class="bi bi-plus-circle"></i> Aksiyon Ekle
+                    </a>
+                    <form asp-action="Assign" asp-route-id="@Model.CaseId" method="post" class="mb-2">
+                        <div class="input-group">
+                            <select name="userId" class="form-select">
+                                @foreach (var user in users)
+                                {
+                                    <option value="@user.UserId">@user.FullName</option>
+                                }
+                            </select>
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="bi bi-person-check"></i>
+                            </button>
+                        </div>
+                    </form>
+                    <a asp-action="Close" asp-route-id="@Model.CaseId" class="btn btn-success w-100 mb-2">
+                        <i class="bi bi-check-circle"></i> Case'i Kapat
+                    </a>
+                    <form asp-action="Escalate" asp-route-id="@Model.CaseId" method="post" class="d-inline w-100">
+                        <button type="submit" class="btn btn-danger w-100">
+                            <i class="bi bi-arrow-up-circle"></i> Üst Kademeye Yükselt
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-8">
+        @if (!string.IsNullOrEmpty(Model.PatientComment))
+        {
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">Hasta Yorumu</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light">
+                        <i class="bi bi-chat-quote"></i> @Model.PatientComment
+                    </div>
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Aksiyon Geçmişi</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Actions.Any())
+                {
+                    <div class="timeline">
+                        @foreach (var action in Model.Actions)
+                        {
+                            <div class="mb-3 p-3 border-start border-4 border-primary">
+                                <div class="d-flex justify-content-between">
+                                    <strong>@action.ActionType</strong>
+                                    <small class="text-muted">@action.CreatedAt.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                                <p class="mb-1"><small>@action.PerformedByName</small></p>
+                                @if (!string.IsNullOrEmpty(action.ActionNote))
+                                {
+                                    <p class="mb-0">@action.ActionNote</p>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Henüz aksiyon eklenmemiş.
+                    </div>
+                }
+            </div>
+        </div>
+
+        @if (Model.Status == "CLOSED")
+        {
+            <div class="card mt-3">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">Kapatma Notu</h5>
+                </div>
+                <div class="card-body">
+                    <p>@Model.ClosureNote</p>
+                    <small class="text-muted">Kapatılma: @Model.ClosedAt?.ToString("dd.MM.yyyy HH:mm")</small>
+                </div>
+            </div>
+        }
+    </div>
+</div>

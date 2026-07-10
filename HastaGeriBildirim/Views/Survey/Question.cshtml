@@ -1,0 +1,111 @@
+@model SurveyQuestionViewModel
+@{
+    Layout = null;
+    var lang = Model.Lang;
+}
+
+<!DOCTYPE html>
+<html lang="@lang" dir="@(lang == "ar" ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@SurveyTexts.Get(lang, "question_label")</title>
+    <link rel="stylesheet" href="~/css/survey.css" asp-append-version="true" />
+</head>
+<body class="survey-body">
+    <main class="survey-shell">
+        @await Html.PartialAsync("_SurveyBrand")
+        <div class="survey-card">
+            <div class="survey-progress" role="progressbar"
+                 aria-valuenow="@Model.CurrentQuestionNumber" aria-valuemin="1" aria-valuemax="@Model.TotalQuestions">
+                <div class="survey-progress-bar"
+                     style="width: @((Model.CurrentQuestionNumber * 100.0 / Math.Max(1, Model.TotalQuestions)).ToString("F0"))%">
+                    @SurveyTexts.Get(lang, "question_label") @Model.CurrentQuestionNumber / @Model.TotalQuestions
+                </div>
+            </div>
+
+            <h1 class="survey-title">@Model.QuestionText</h1>
+            @if (!string.IsNullOrEmpty(Model.HelpText))
+            {
+                <p class="survey-muted">@Model.HelpText</p>
+            }
+
+            <form asp-action="SubmitAnswer" method="post" class="survey-stack" style="margin-top:24px">
+                <input type="hidden" name="Token" value="@Model.Token" />
+                <input type="hidden" name="QuestionId" value="@Model.QuestionId" />
+
+                @if (Model.QuestionType == "NPS" || Model.QuestionType == "CSAT" || Model.QuestionType == "CES")
+                {
+                    <div class="survey-actions">
+                        @for (int i = Model.MinValue; i <= Model.MaxValue; i++)
+                        {
+                            <button type="submit" name="NumericValue" value="@i"
+                                    class="survey-btn secondary rating" aria-label="@i">
+                                @i
+                            </button>
+                        }
+                    </div>
+                    <div class="survey-row survey-muted">
+                        <small>@SurveyTexts.Get(lang, Model.QuestionType == "CES" ? "ces_low" : "nps_low")</small>
+                        <small>@SurveyTexts.Get(lang, Model.QuestionType == "CES" ? "ces_high" : "nps_high")</small>
+                    </div>
+                }
+                else if (Model.QuestionType == "SMILEY")
+                {
+                    <div class="survey-actions">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <button type="submit" name="NumericValue" value="@i"
+                                    class="survey-btn secondary rating" aria-label="@i">
+                                @i
+                            </button>
+                        }
+                    </div>
+                }
+                else if (Model.QuestionType == "STAR")
+                {
+                    <div class="survey-actions">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <button type="submit" name="NumericValue" value="@i"
+                                    class="survey-btn secondary rating" aria-label="@i">
+                                @i
+                            </button>
+                        }
+                    </div>
+                }
+                else if (Model.QuestionType == "MULTIPLE_CHOICE")
+                {
+                    @foreach (var option in Model.Options)
+                    {
+                        <button type="submit" name="SelectedOptionId" value="@option.OptionId"
+                                class="survey-btn secondary">
+                            @option.OptionText
+                        </button>
+                    }
+                }
+                else if (Model.QuestionType == "FREE_TEXT")
+                {
+                    <textarea name="TextValue" class="survey-textarea"
+                              placeholder="@SurveyTexts.Get(lang, "free_text_placeholder")"></textarea>
+                    <div class="survey-actions">
+                        <button type="submit" class="survey-btn">
+                            @SurveyTexts.Get(lang, "continue_button")
+                        </button>
+                        <button type="submit" name="IsSkipped" value="true" class="survey-btn secondary">
+                            @SurveyTexts.Get(lang, "skip_button")
+                        </button>
+                    </div>
+                }
+
+                @if (!Model.IsRequired && Model.QuestionType != "FREE_TEXT")
+                {
+                    <button type="submit" name="IsSkipped" value="true" class="survey-btn muted">
+                        @SurveyTexts.Get(lang, "skip_button")
+                    </button>
+                }
+            </form>
+        </div>
+    </main>
+</body>
+</html>

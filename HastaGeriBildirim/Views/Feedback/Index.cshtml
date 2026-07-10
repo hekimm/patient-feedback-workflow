@@ -1,0 +1,103 @@
+@model FeedbackListViewModel
+@{
+    ViewData["Title"] = "Geri Bildirimler";
+}
+
+<h2><i class="bi bi-chat-left-text"></i> Geri Bildirimler</h2>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Başlangıç Tarihi</label>
+                <input type="date" name="filter.StartDate" class="form-control" 
+                       value="@Model.Filter.StartDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Bitiş Tarihi</label>
+                <input type="date" name="filter.EndDate" class="form-control" 
+                       value="@Model.Filter.EndDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Durum</label>
+                <select name="filter.IsNegative" class="form-select">
+                    <option value="">Tümü</option>
+                    <option value="true">Sadece Negatif</option>
+                    <option value="false">Sadece Pozitif</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Tarih</th>
+                        <th>Hasta</th>
+                        <th>Bölüm</th>
+                        <th>Hekim</th>
+                        <th class="text-center">Puan</th>
+                        <th class="text-center">NPS</th>
+                        <th class="text-center">CSAT</th>
+                        <th class="text-center">Sentiment</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var feedback in Model.Feedbacks)
+                    {
+                        <tr>
+                            <td>@feedback.CompletedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td>
+                                @feedback.PatientName
+                                @if (feedback.IsAnonymous)
+                                {
+                                    <span class="badge bg-secondary">Anonim</span>
+                                }
+                            </td>
+                            <td>@feedback.DepartmentName</td>
+                            <td>@feedback.DoctorName</td>
+                            <td class="text-center">
+                                <span class="badge bg-@(feedback.OverallScore >= 7 ? "success" : feedback.OverallScore >= 5 ? "warning" : "danger")">
+                                    @feedback.OverallScore?.ToString("F1")
+                                </span>
+                            </td>
+                            <td class="text-center">@feedback.NpsScore?.ToString("F0")</td>
+                            <td class="text-center">@feedback.CsatScore?.ToString("F0")</td>
+                            <td class="text-center">
+                                @if (!string.IsNullOrEmpty(feedback.SentimentLabel))
+                                {
+                                    <span class="badge bg-@(feedback.SentimentLabel == "POSITIVE" ? "success" : feedback.SentimentLabel == "NEGATIVE" ? "danger" : "warning")">
+                                        @feedback.SentimentLabel
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@feedback.ResponseId" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye"></i> Detay
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Feedbacks.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

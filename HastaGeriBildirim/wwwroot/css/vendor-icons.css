@@ -1,0 +1,54 @@
+.bi {
+    display: inline-block;
+    width: 1.1em;
+    min-width: 1.1em;
+    line-height: 1;
+    text-align: center;
+    font-style: normal;
+    font-weight: 700;
+}
+
+.bi::before { content: "*"; }
+.bi-hospital::before { content: "+"; }
+.bi-box-arrow-in-right::before,
+.bi-box-arrow-right::before { content: "->"; }
+.bi-list::before { content: "\2630"; }
+.bi-person-circle::before,
+.bi-person-badge::before,
+.bi-person-check::before { content: "@"; }
+.bi-check::before,
+.bi-check-circle::before,
+.bi-shield-check::before { content: "\2713"; }
+.bi-x-circle::before { content: "x"; }
+.bi-exclamation-triangle::before,
+.bi-shield-exclamation::before { content: "!"; }
+.bi-info-circle::before { content: "i"; }
+.bi-funnel::before { content: "\25bd"; }
+.bi-journal-text::before,
+.bi-file-text::before,
+.bi-chat-left-text::before,
+.bi-chat-quote::before { content: "\25a4"; }
+.bi-broadcast::before { content: "\25ce"; }
+.bi-calendar-event::before { content: "\25a3"; }
+.bi-play-circle::before { content: "\25b6"; }
+.bi-plus-circle::before,
+.bi-plus::before { content: "+"; }
+.bi-download::before { content: "\2193"; }
+.bi-speedometer2::before { content: "\25d4"; }
+.bi-file-earmark-excel::before { content: "X"; }
+.bi-file-earmark-pdf::before { content: "P"; }
+.bi-arrow-left::before { content: "<"; }
+.bi-arrow-left-right::before { content: "<>"; }
+.bi-tools::before,
+.bi-gear::before { content: "\2699"; }
+.bi-eye::before { content: "\25c9"; }
+.bi-shield-lock::before { content: "\25a0"; }
+.bi-envelope::before { content: "@"; }
+.bi-people::before { content: "##"; }
+.bi-clock::before { content: "\25f7"; }
+.bi-arrow-up-circle::before { content: "\2191"; }
+.bi-qr-code::before { content: "QR"; font-size: .75em; }
+.bi-layers::before { content: "\25a5"; }
+.bi-trash::before { content: "\00d7"; }
+.bi-save::before { content: "\2713"; }
+.bi-pencil::before { content: "\270e"; }

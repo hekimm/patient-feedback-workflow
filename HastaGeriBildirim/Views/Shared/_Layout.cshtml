@@ -1,0 +1,88 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var quickLinks = Configuration.GetSection("Branding:PublicQuickLinks").GetChildren()
+        .Where(x => !string.IsNullOrWhiteSpace(x.Value))
+        .ToList();
+
+    string QuickLinkLabel(string key) => key.Replace("_", " ") switch
+    {
+        "e-Nabiz" => "e-Nabız",
+        "SABIM 184" => "SABİM 184",
+        "CIMER" => "CİMER",
+        _ => key.Replace("_", " ")
+    };
+}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Hasta Geri Bildirim Sistemi</title>
+    <link rel="stylesheet" href="~/css/vendor-bootstrap.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/vendor-icons.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="probel-admin-body">
+    <div class="probel-admin-shell d-flex" id="wrapper">
+        @await Html.PartialAsync("_AdminSidebar")
+        
+        <div id="page-content-wrapper" class="w-100">
+            <nav class="probel-topbar navbar navbar-expand-lg">
+                <div class="container-fluid probel-topbar-inner">
+                    <button class="btn probel-icon-btn" id="sidebarToggle" aria-label="Menüyü aç/kapat">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <div class="probel-topbar-title">
+                        <span class="probel-module-label">Hasta Geri Bildirim Modülü</span>
+                        <strong>@(ViewData["Title"] ?? "Dashboard")</strong>
+                    </div>
+                    <div class="ms-auto d-flex align-items-center probel-user-actions">
+                        <span class="probel-user-chip">
+                            <i class="bi bi-person-circle"></i>
+                            <span>@ViewBag.FullName</span>
+                        </span>
+                        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+                            <button type="submit" class="btn btn-sm btn-light">
+                                <i class="bi bi-box-arrow-right"></i> Çıkış
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="probel-contextbar">
+                <div>
+                    <span class="probel-status-dot" aria-hidden="true"></span>
+                    Probel HBYS · Devlet Hastanesi Kalite İzleme
+                </div>
+                <div class="probel-context-links" aria-label="Kamu sağlık hızlı erişim">
+                    @if (quickLinks.Any())
+                    {
+                        @foreach (var link in quickLinks)
+                        {
+                            <a href="@link.Value" rel="noopener">@QuickLinkLabel(link.Key)</a>
+                        }
+                    }
+                    else
+                    {
+                        <a href="https://www.mhrs.gov.tr/" rel="noopener">MHRS</a>
+                        <a href="https://enabiz.gov.tr/" rel="noopener">e-Nabız</a>
+                        <a href="tel:184">SABİM 184</a>
+                        <a href="tel:112">Acil 112</a>
+                        <a href="https://www.cimer.gov.tr/" rel="noopener">CİMER</a>
+                    }
+                </div>
+            </div>
+
+            <main class="container-fluid p-4 probel-content" id="mainContent">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/js/vendor-bootstrap.js"></script>
+    <script src="~/js/vendor-chart.js"></script>
+    <script src="~/js/site.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

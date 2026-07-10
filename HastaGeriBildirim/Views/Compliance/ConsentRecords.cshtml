@@ -1,0 +1,82 @@
+@model List<ConsentRecord>
+@{
+    ViewData["Title"] = "KVKK Rıza Kayıtları";
+}
+
+<h2><i class="bi bi-shield-lock"></i> KVKK Rıza Kayıtları</h2>
+
+<form method="get" class="card mb-4">
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Başlangıç Tarihi</label>
+                <input type="date" name="startDate" class="form-control" value="@ViewBag.StartDate" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Bitiş Tarihi</label>
+                <input type="date" name="endDate" class="form-control" value="@ViewBag.EndDate" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i> Filtrele
+                </button>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Rıza ID</th>
+                        <th>Tarih</th>
+                        <th class="text-center">Rıza Verildi</th>
+                        <th class="text-center">Anonim</th>
+                        <th>IP Adresi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var record in Model)
+                    {
+                        <tr>
+                            <td>@record.ConsentId</td>
+                            <td>@record.ConsentDate.ToString("dd.MM.yyyy HH:mm")</td>
+                            <td class="text-center">
+                                @if (record.IsConsentGiven)
+                                {
+                                    <i class="bi bi-check-circle text-success"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-x-circle text-danger"></i>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (record.IsAnonymous)
+                                {
+                                    <span class="badge bg-secondary">Anonim</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Hayır</span>
+                                }
+                            </td>
+                            <td><small class="text-muted">@record.IpAddress</small></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle"></i> Kayıt bulunamadı.
+            </div>
+        }
+    </div>
+</div>

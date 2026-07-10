@@ -1,0 +1,67 @@
+@model RolesViewModel
+@{
+    ViewData["Title"] = "Roller";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="bi bi-shield-check"></i> Roller ve Yetkiler</h2>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Roller</h5>
+            </div>
+            <div class="card-body">
+                @foreach (var role in Model.Roles)
+                {
+                    <div class="border-bottom py-2">
+                        <div class="fw-bold">@role.RoleName</div>
+                        <span class="badge bg-primary">@role.RoleCode</span>
+                        @if (!string.IsNullOrEmpty(role.Description))
+                        {
+                            <div class="text-muted small mt-1">@role.Description</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">İzin Matrisi</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Rol</th>
+                                <th>Modül</th>
+                                <th>İzin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var permission in Model.Permissions)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">@permission.RoleCode</span></td>
+                                    <td>@permission.ModuleName</td>
+                                    <td>@permission.PermissionName</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (!Model.Permissions.Any())
+                {
+                    <div class="alert alert-info">İzin kaydı bulunamadı.</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
