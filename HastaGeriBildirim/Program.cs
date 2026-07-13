@@ -1,6 +1,31 @@
 using HastaGeriBildirim.Extensions;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Text;
 using System.Threading.RateLimiting;
+
+if (args.Length == 1 &&
+    string.Equals(args[0], "--generate-password-hash", StringComparison.OrdinalIgnoreCase))
+{
+    var password = ReadSecret("Password: ");
+    var confirmation = ReadSecret("Confirm password: ");
+
+    if (password.Length < 12)
+    {
+        Console.Error.WriteLine("Password must contain at least 12 characters.");
+        Environment.ExitCode = 2;
+        return;
+    }
+
+    if (!string.Equals(password, confirmation, StringComparison.Ordinal))
+    {
+        Console.Error.WriteLine("Passwords do not match.");
+        Environment.ExitCode = 2;
+        return;
+    }
+
+    Console.WriteLine(BCrypt.Net.BCrypt.HashPassword(password));
+    return;
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,3 +112,39 @@ app.MapControllerRoute(
     pattern: "{controller=Account}/{action=Login}/{id?}");
 
 app.Run();
+
+static string ReadSecret(string prompt)
+{
+    Console.Error.Write(prompt);
+
+    if (Console.IsInputRedirected)
+    {
+        return Console.ReadLine() ?? string.Empty;
+    }
+
+    var value = new StringBuilder();
+    while (true)
+    {
+        var key = Console.ReadKey(intercept: true);
+        if (key.Key == ConsoleKey.Enter)
+        {
+            Console.Error.WriteLine();
+            return value.ToString();
+        }
+
+        if (key.Key == ConsoleKey.Backspace)
+        {
+            if (value.Length > 0)
+            {
+                value.Length--;
+            }
+
+            continue;
+        }
+
+        if (!char.IsControl(key.KeyChar))
+        {
+            value.Append(key.KeyChar);
+        }
+    }
+}

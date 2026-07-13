@@ -27,7 +27,29 @@ public class ProductionReadinessValidatorTests
     [Fact]
     public void ValidateConfiguration_AcceptsStrongProductionSettings()
     {
-        var validator = CreateValidator(new Dictionary<string, string?>
+        var validator = CreateValidator(CreateStrongSettings());
+
+        var errors = validator.ValidateConfiguration(includeIntegrationSecrets: true);
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public void ValidateConfiguration_RejectsNonHttpsPublicBaseUrl()
+    {
+        var settings = CreateStrongSettings();
+        settings["PublicBaseUrl"] = "http://hgb.example.org";
+        var validator = CreateValidator(settings);
+
+        var errors = validator.ValidateConfiguration(includeIntegrationSecrets: true);
+
+        Assert.Contains(errors, error =>
+            error.Contains("PublicBaseUrl") && error.Contains("HTTPS"));
+    }
+
+    private static Dictionary<string, string?> CreateStrongSettings()
+    {
+        return new Dictionary<string, string?>
         {
             ["ConnectionStrings:OracleDb"] = "User Id=patient_app;Password=StrongPassword;Data Source=prod-db:1521/PROD;",
             ["Security:PiiEncryptionKey"] = "0123456789abcdef0123456789abcdef",
@@ -43,11 +65,7 @@ public class ProductionReadinessValidatorTests
             ["Integrations:WhatsApp:VerifyToken"] = "verify-token",
             ["Integrations:ProbelBi:BaseUrl"] = "https://bi.example.org",
             ["Integrations:ProbelBi:BearerToken"] = "bi-token"
-        });
-
-        var errors = validator.ValidateConfiguration(includeIntegrationSecrets: true);
-
-        Assert.Empty(errors);
+        };
     }
 
     private static ProductionReadinessValidator CreateValidator(Dictionary<string, string?> settings)

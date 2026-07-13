@@ -1,0 +1,110 @@
+-- Run as the application schema owner. This script can be run again safely.
+
+WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
+WHENEVER OSERROR EXIT FAILURE
+
+SET DEFINE OFF;
+SET SERVEROUTPUT ON;
+SET VERIFY OFF;
+
+PROMPT Step 001 - foundation and organization tables started.
+
+DECLARE
+    PROCEDURE create_table_if_missing(p_table_name VARCHAR2, p_sql CLOB) IS
+        v_count NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO v_count
+        FROM user_tables
+        WHERE table_name = UPPER(p_table_name);
+
+        IF v_count = 0 THEN
+            EXECUTE IMMEDIATE p_sql;
+            DBMS_OUTPUT.PUT_LINE('created table ' || p_table_name);
+        END IF;
+    END;
+BEGIN
+    create_table_if_missing('HGB_HOSPITALS', q'[
+        CREATE TABLE HGB_HOSPITALS (
+            HOSPITAL_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            HOSPITAL_NAME NVARCHAR2(200) NOT NULL,
+            STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )]');
+
+    create_table_if_missing('HGB_BRANCHES', q'[
+        CREATE TABLE HGB_BRANCHES (
+            BRANCH_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            HOSPITAL_ID NUMBER NOT NULL,
+            BRANCH_NAME NVARCHAR2(200) NOT NULL,
+            STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )]');
+
+    create_table_if_missing('HGB_DEPARTMENTS', q'[
+        CREATE TABLE HGB_DEPARTMENTS (
+            DEPARTMENT_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            BRANCH_ID NUMBER NOT NULL,
+            DEPARTMENT_NAME NVARCHAR2(200) NOT NULL,
+            STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )]');
+
+    create_table_if_missing('HGB_DOCTORS', q'[
+        CREATE TABLE HGB_DOCTORS (
+            DOCTOR_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            FULL_NAME NVARCHAR2(200) NOT NULL,
+            STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )]');
+
+    create_table_if_missing('HGB_SERVICES', q'[
+        CREATE TABLE HGB_SERVICES (
+            SERVICE_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            SERVICE_NAME NVARCHAR2(200) NOT NULL,
+            STATUS VARCHAR2(20) DEFAULT 'ACTIVE',
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )]');
+
+    create_table_if_missing('HGB_PATIENTS', q'[
+        CREATE TABLE HGB_PATIENTS (
+            PATIENT_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            EXTERNAL_PATIENT_REF VARCHAR2(100) UNIQUE,
+            PSEUDONYM_CODE VARCHAR2(80) DEFAULT RAWTOHEX(SYS_GUID()),
+            FULL_NAME NVARCHAR2(200),
+            PHONE VARCHAR2(50),
+            PHONE_ENC CLOB,
+            PHONE_HASH VARCHAR2(128),
+            EMAIL VARCHAR2(200),
+            EMAIL_ENC CLOB,
+            EMAIL_HASH VARCHAR2(128),
+            PREFERRED_LANGUAGE VARCHAR2(5) DEFAULT 'tr',
+            ALLOW_CONTACT NUMBER(1) DEFAULT 1,
+            IS_DELETED NUMBER(1) DEFAULT 0,
+            CREATED_AT TIMESTAMP DEFAULT SYSTIMESTAMP,
+            UPDATED_AT TIMESTAMP
+        )]');
+
+    create_table_if_missing('HGB_SCHEMA_VERSION', q'[
+        CREATE TABLE HGB_SCHEMA_VERSION (
+            VERSION_ID NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+            VERSION_CODE VARCHAR2(80) UNIQUE NOT NULL,
+            DESCRIPTION NVARCHAR2(500),
+            APPLIED_AT TIMESTAMP DEFAULT SYSTIMESTAMP
+        )]');
+
+END;
+/
+
+MERGE INTO HGB_SCHEMA_VERSION t
+USING (
+    SELECT '2026-07-schema-01-foundation' VERSION_CODE, 'Foundation, organization and patient tables' DESCRIPTION
+    FROM dual
+) s
+ON (t.VERSION_CODE = s.VERSION_CODE)
+WHEN NOT MATCHED THEN
+    INSERT (VERSION_CODE, DESCRIPTION)
+    VALUES (s.VERSION_CODE, s.DESCRIPTION);
+
+COMMIT;
+
+PROMPT Step 001 - foundation and organization tables completed.

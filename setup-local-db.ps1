@@ -5,6 +5,7 @@ param(
     [int]$Port = 1521,
     [string]$OraclePassword = 'OraclePass_12345',
     [string]$AppPassword = '',
+    [string]$OracleImage = 'gvenzl/oracle-free:23.26.2-slim-faststart',
     [switch]$Reset
 )
 
@@ -43,7 +44,7 @@ function Test-TcpPortFree {
 }
 
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
-    throw 'Docker bulunamadi. Docker Desktop kurun ve baslatin, veya README''deki "Docker olmadan kurulum" adimlarini izleyin.'
+    throw 'Docker bulunamadi. Docker Desktop kurun ve baslatin, veya README''deki "Use an Existing Oracle Database" adimlarini izleyin.'
 }
 
 docker version --format '{{.Server.Version}}' *> $null
@@ -65,10 +66,29 @@ if ([string]::IsNullOrWhiteSpace($existing)) {
     }
 
     Write-Host "Oracle container'i olusturuluyor: $ContainerName (port $Port)..."
-    docker run -d --name $ContainerName -p "${Port}:1521" -e "ORACLE_PASSWORD=$OraclePassword" gvenzl/oracle-free | Out-Null
+    docker run -d --name $ContainerName -p "${Port}:1521" -e "ORACLE_PASSWORD=$OraclePassword" $OracleImage | Out-Null
     Assert-LastExitCode "Oracle container olusturulamadi: $ContainerName"
 }
 else {
+    $existingImage = docker inspect --format '{{.Config.Image}}' $ContainerName
+    Assert-LastExitCode "Docker container image bilgisi okunamadi: $ContainerName"
+    if ($existingImage -ne $OracleImage) {
+        throw "Mevcut container image'i '$existingImage'; beklenen '$OracleImage'. -Reset kullanin veya -OracleImage '$existingImage' verin."
+    }
+
+    $publishedPorts = @(docker port $ContainerName 1521/tcp)
+    Assert-LastExitCode "Docker container port bilgisi okunamadi: $ContainerName"
+    $mappedPorts = @(
+        $publishedPorts |
+            ForEach-Object {
+                if ($_ -match ':(\d+)$') { [int]$Matches[1] }
+            } |
+            Select-Object -Unique
+    )
+    if ($mappedPorts -notcontains $Port) {
+        throw "Mevcut container Oracle portu $($mappedPorts -join ','); istenen port $Port. Dogru -Port degerini verin veya -Reset kullanin."
+    }
+
     Write-Host "Mevcut container baslatiliyor: $ContainerName"
     docker start $ContainerName | Out-Null
     Assert-LastExitCode "Docker container baslatilamadi: $ContainerName"
@@ -76,30 +96,37 @@ else {
 
 Write-Host 'Oracle hazir olana kadar bekleniyor (ilk kurulumda birkac dakika surebilir)...'
 $deadline = (Get-Date).AddMinutes(6)
-$health = ''
+$isReady = $false
 while ((Get-Date) -lt $deadline) {
-    $health = docker inspect --format '{{.State.Health.Status}}' $ContainerName
-    if ($health -eq 'healthy') { break }
+    docker exec $ContainerName healthcheck.sh *> $null
+    if ($LASTEXITCODE -eq 0) {
+        $isReady = $true
+        break
+    }
     Start-Sleep -Seconds 5
 }
-if ($health -ne 'healthy') {
-    throw "Oracle container'i hazir duruma gelmedi (durum: $health). 'docker logs $ContainerName' ciktisini kontrol edin."
+if (-not $isReady) {
+    throw "Oracle container'i hazir duruma gelmedi. 'docker logs $ContainerName' ciktisini kontrol edin."
 }
 
 Write-Host 'Veritabani scriptleri container icine kopyalaniyor...'
-docker exec $ContainerName sh -c 'rm -rf /tmp/hgb-db' | Out-Null
+docker exec -u 0 $ContainerName sh -c 'rm -rf /tmp/hgb-db' | Out-Null
 Assert-LastExitCode 'Container icindeki onceki /tmp/hgb-db klasoru temizlenemedi.'
 docker cp $dbDir "${ContainerName}:/tmp/hgb-db"
 Assert-LastExitCode 'Veritabani scriptleri container icine kopyalanamadi.'
 
 function Invoke-SqlplusScript {
-    param([string]$Connect, [string]$ScriptPath, [string]$ScriptArg)
+    param(
+        [string]$Connect,
+        [string]$ScriptPath,
+        [string[]]$SqlArguments = @()
+    )
 
-    if ([string]::IsNullOrWhiteSpace($ScriptArg)) {
-        $output = docker exec $ContainerName sqlplus -S -L $Connect "@$ScriptPath"
+    if ($SqlArguments.Count -eq 0) {
+        $output = docker exec -w /tmp/hgb-db $ContainerName sqlplus -S -L $Connect "@$ScriptPath"
     }
     else {
-        $output = docker exec $ContainerName sqlplus -S -L $Connect "@$ScriptPath" $ScriptArg
+        $output = docker exec -w /tmp/hgb-db $ContainerName sqlplus -S -L $Connect "@$ScriptPath" @SqlArguments
     }
 
     $output | ForEach-Object { Write-Host "  $_" }
@@ -112,9 +139,10 @@ function Invoke-SqlplusScript {
 }
 
 Write-Host 'patient_app kullanicisi olusturuluyor/yetkilendiriliyor...'
-Invoke-SqlplusScript "system/$OraclePassword@localhost/FREEPDB1" '/tmp/hgb-db/setup-oracle-permissions.sql' $AppPassword | Out-Null
+Invoke-SqlplusScript "system/$OraclePassword@localhost/FREEPDB1" '/tmp/hgb-db/admin/001-create-application-user.sql' @($AppPassword) | Out-Null
+Invoke-SqlplusScript "system/$OraclePassword@localhost/FREEPDB1" '/tmp/hgb-db/admin/002-grant-application-privileges.sql' @('USERS', 'UNLIMITED') | Out-Null
 
-Write-Host 'Sema, FK, hardening, demo seed ve smoke kontrolleri uygulaniyor (install-demo.sql)...'
+Write-Host 'Sema, indeks, FK, demo verisi ve dogrulama modulleri uygulaniyor (install-demo.sql)...'
 $installOutput = Invoke-SqlplusScript "patient_app/$AppPassword@localhost/FREEPDB1" '/tmp/hgb-db/install-demo.sql'
 
 $tableCountMatch = [regex]::Match($installOutput, 'TABLE_COUNT\s*-+\s*(\d+)')
@@ -132,11 +160,8 @@ Write-Host ''
 Write-Host "Kurulum tamamlandi: $tableCount HGB tablosu, demo kullanicilari hazir." -ForegroundColor Green
 Write-Host ''
 Write-Host 'Uygulamayi baslatmak icin:'
-Write-Host '  .\run-hgb-ui.ps1'
-if ($ContainerName -ne 'patient-oracle' -or $Port -ne 1521 -or $AppPassword -ne $OraclePassword) {
-    Write-Host ''
-    Write-Host 'Varsayilan disi container/port/parola kullandiginiz icin once baglanti dizesini verin:'
-    Write-Host "  `$env:ConnectionStrings__OracleDb = 'User Id=patient_app;Password=$AppPassword;Data Source=localhost:$Port/FREEPDB1;Connection Timeout=5;'"
-}
+Write-Host "  `$env:ASPNETCORE_ENVIRONMENT = 'Development'"
+Write-Host "  `$env:ConnectionStrings__OracleDb = 'User Id=patient_app;Password=$AppPassword;Data Source=localhost:$Port/FREEPDB1;Connection Timeout=5;'"
+Write-Host '  dotnet run --project .\HastaGeriBildirim\HastaGeriBildirim.csproj -- --urls http://localhost:5080'
 Write-Host ''
 Write-Host 'Demo girisleri: admin.demo/Admin123!  kalite.demo/Kalite123!  birim.demo/Birim123!'

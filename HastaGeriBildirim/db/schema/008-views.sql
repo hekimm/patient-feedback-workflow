@@ -1,0 +1,81 @@
+-- Run as the application schema owner. This script can be run again safely.
+
+WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
+WHENEVER OSERROR EXIT FAILURE
+
+SET DEFINE OFF;
+SET SERVEROUTPUT ON;
+SET VERIFY OFF;
+
+PROMPT Step 008 - reporting views started.
+
+DECLARE
+    PROCEDURE create_view(p_view_name VARCHAR2, p_sql CLOB) IS
+    BEGIN
+        EXECUTE IMMEDIATE p_sql;
+        DBMS_OUTPUT.PUT_LINE('created/replaced view ' || p_view_name);
+    END;
+BEGIN
+    create_view('HGB_V_FEEDBACK_DASHBOARD', q'[
+        CREATE OR REPLACE VIEW HGB_V_FEEDBACK_DASHBOARD AS
+        SELECT
+            TRUNC(r.SUBMITTED_AT) REPORT_DATE,
+            r.BRANCH_ID,
+            r.DEPARTMENT_ID,
+            d.DEPARTMENT_NAME,
+            r.DOCTOR_ID,
+            doc.FULL_NAME DOCTOR_NAME,
+            COUNT(*) TOTAL_RESPONSES,
+            AVG(r.OVERALL_SCORE) AVG_OVERALL_SCORE,
+            AVG(r.CSAT_SCORE) AVG_CSAT_SCORE,
+            CASE WHEN COUNT(r.NPS_SCORE) = 0 THEN NULL
+                 ELSE ROUND(
+                    (
+                        SUM(CASE WHEN r.NPS_SCORE >= 9 THEN 1 ELSE 0 END) -
+                        SUM(CASE WHEN r.NPS_SCORE <= 6 THEN 1 ELSE 0 END)
+                    ) / COUNT(r.NPS_SCORE) * 100, 2)
+            END NPS_VALUE,
+            SUM(CASE WHEN r.IS_NEGATIVE = 1 THEN 1 ELSE 0 END) NEGATIVE_COUNT,
+            CASE WHEN COUNT(*) = 0 THEN 0
+                 ELSE ROUND(SUM(CASE WHEN r.IS_NEGATIVE = 1 THEN 1 ELSE 0 END) / COUNT(*) * 100, 2)
+            END NEGATIVE_RATE
+        FROM HGB_SURVEY_RESPONSES r
+        LEFT JOIN HGB_DEPARTMENTS d ON r.DEPARTMENT_ID = d.DEPARTMENT_ID
+        LEFT JOIN HGB_DOCTORS doc ON r.DOCTOR_ID = doc.DOCTOR_ID
+        WHERE r.RESPONSE_STATUS = 'SUBMITTED'
+        GROUP BY TRUNC(r.SUBMITTED_AT), r.BRANCH_ID, r.DEPARTMENT_ID, d.DEPARTMENT_NAME, r.DOCTOR_ID, doc.FULL_NAME]');
+
+    create_view('HGB_V_OPEN_RECOVERY_CASES', q'[
+        CREATE OR REPLACE VIEW HGB_V_OPEN_RECOVERY_CASES AS
+        SELECT
+            c.RECOVERY_CASE_ID,
+            c.RESPONSE_ID,
+            c.CASE_STATUS,
+            c.PRIORITY,
+            d.DEPARTMENT_NAME,
+            r.OVERALL_SCORE,
+            u.FULL_NAME ASSIGNED_USER_NAME,
+            c.OPENED_AT,
+            c.SLA_DUE_AT,
+            CASE WHEN c.SLA_DUE_AT < SYSTIMESTAMP AND c.CASE_STATUS <> 'CLOSED' THEN 1 ELSE 0 END IS_SLA_BREACHED
+        FROM HGB_SERVICE_RECOVERY_CASES c
+        JOIN HGB_SURVEY_RESPONSES r ON c.RESPONSE_ID = r.RESPONSE_ID
+        LEFT JOIN HGB_DEPARTMENTS d ON c.DEPARTMENT_ID = d.DEPARTMENT_ID
+        LEFT JOIN HGB_USERS u ON c.ASSIGNED_USER_ID = u.USER_ID
+        WHERE c.CASE_STATUS <> 'CLOSED']');
+END;
+/
+
+MERGE INTO HGB_SCHEMA_VERSION t
+USING (
+    SELECT '2026-07-schema-08-views' VERSION_CODE, 'Dashboard and recovery reporting views' DESCRIPTION
+    FROM dual
+) s
+ON (t.VERSION_CODE = s.VERSION_CODE)
+WHEN NOT MATCHED THEN
+    INSERT (VERSION_CODE, DESCRIPTION)
+    VALUES (s.VERSION_CODE, s.DESCRIPTION);
+
+COMMIT;
+
+PROMPT Step 008 - reporting views completed.

@@ -1,6 +1,7 @@
--- Run as patient_app after install-production.sql or install-demo.sql.
+-- Run as PATIENT_APP after install-production.sql or install-demo.sql.
 
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
+WHENEVER OSERROR EXIT FAILURE
 
 SET DEFINE OFF;
 SET VERIFY OFF;

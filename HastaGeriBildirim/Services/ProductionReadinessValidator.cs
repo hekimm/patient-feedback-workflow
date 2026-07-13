@@ -29,7 +29,7 @@ public class ProductionReadinessValidator
         Require(errors, _configuration.GetConnectionString("OracleDb"), "ConnectionStrings__OracleDb");
         RequireStrong(errors, Read("HGB_PII_ENCRYPTION_KEY", "Security:PiiEncryptionKey"), "HGB_PII_ENCRYPTION_KEY", 32);
         RequireStrong(errors, Read("HGB_TOKEN_HASH_SALT", "TokenSettings:HashSalt"), "HGB_TOKEN_HASH_SALT", 32);
-        Require(errors, Read("PublicBaseUrl", "PublicBaseUrl"), "PublicBaseUrl");
+        RequireHttpsUrl(errors, Read("PublicBaseUrl", "PublicBaseUrl"), "PublicBaseUrl");
         Require(errors, Read("HGB_WEBHOOK_API_KEY", "Integrations:WebhookApiKey"), "HGB_WEBHOOK_API_KEY");
         RequireStrong(errors, Read("HGB_WEBHOOK_HMAC_SECRET", "Integrations:WebhookHmacSecret"), "HGB_WEBHOOK_HMAC_SECRET", 32);
         RequireStrong(errors, Read("WHATSAPP_APP_SECRET", "Integrations:WhatsApp:AppSecret"), "WHATSAPP_APP_SECRET", 32);
@@ -67,7 +67,7 @@ public class ProductionReadinessValidator
                     cancellationToken: cancellationToken));
 
             if (tableCount < 3)
-                errors.Add("Production hardening migration eksik: HGB_SCHEMA_VERSION/HGB_USER_SCOPES/HGB_WEBHOOK_REPLAY bekleniyor.");
+                errors.Add("Gerekli veritabanı nesneleri eksik: HGB_SCHEMA_VERSION/HGB_USER_SCOPES/HGB_WEBHOOK_REPLAY bekleniyor.");
 
             if (_environment.IsProduction())
             {
@@ -105,6 +105,22 @@ public class ProductionReadinessValidator
     {
         if (string.IsNullOrWhiteSpace(value) || IsUnsafePlaceholder(value))
             errors.Add($"{name} zorunludur ve demo/placeholder olamaz.");
+    }
+
+    private static void RequireHttpsUrl(List<string> errors, string? value, string name)
+    {
+        if (string.IsNullOrWhiteSpace(value) || IsUnsafePlaceholder(value))
+        {
+            errors.Add($"{name} zorunludur ve demo/placeholder olamaz.");
+            return;
+        }
+
+        if (!Uri.TryCreate(value.Trim(), UriKind.Absolute, out var uri) ||
+            !string.Equals(uri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase) ||
+            string.IsNullOrWhiteSpace(uri.Host))
+        {
+            errors.Add($"{name} gecerli bir HTTPS adresi olmalidir.");
+        }
     }
 
     private static void RequireStrong(List<string> errors, string? value, string name, int minimumLength)

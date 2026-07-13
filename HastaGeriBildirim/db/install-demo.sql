@@ -1,18 +1,17 @@
--- Run as patient_app after setup-oracle-permissions.sql has created/unlocked the user.
--- Installs schema, constraints, hardening tables, demo users and local smoke checks.
+-- Local setup only. This script loads mock data and must not be used in production.
 
 WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
+WHENEVER OSERROR EXIT FAILURE
 
 SET DEFINE OFF;
 SET VERIFY OFF;
 
-PROMPT HGB demo install started.
+PROMPT HGB demo manifest started.
 
-@@hgb-oracle-install.sql
-@@referential-integrity.sql
-@@production-hardening.sql
-@@demo-seed.sql
-@@verify-database.sql
-@@smoke-ui.sql
+@@install-production.sql
+@@demo/001-demo-organization.sql
+@@demo/002-demo-users.sql
+@@demo/003-demo-settings.sql
+@@verify/003-demo.sql
 
-PROMPT HGB demo install completed.
+PROMPT HGB demo manifest completed.
