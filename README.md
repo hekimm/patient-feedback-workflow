@@ -37,9 +37,9 @@ Clinical event
 - MVC controllers delegate workflow decisions to application services, while repositories keep Oracle access separate.
 - Dapper keeps the SQL and stored workflow state visible when debugging an invitation or delivery attempt.
 - Hosted services process background delivery, maintenance, and migration work.
-- Sentiment analysis uses a small local Turkish lexicon. Its behavior is deterministic and inspectable, but deliberately limited.
-- SMS, WhatsApp, and BI integrations are configurable HTTP adapter boundaries; they are not presented as validated live integrations.
-- Production configuration and schema checks fail early when required secrets, hardening objects, or safe settings are missing.
+- Sentiment analysis uses a small local Turkish lexicon. It only matches defined terms, so results are deterministic and easy to inspect.
+- SMS, WhatsApp, and BI integrations use configurable HTTP clients. They have not been tested against live provider systems.
+- Production configuration and schema checks fail early when required secrets, schema objects, or safe settings are missing.
 
 ## Technology
 
@@ -60,7 +60,7 @@ Clinical event
 - `HastaGeriBildirim/Controllers` contains MVC and API entry points.
 - `HastaGeriBildirim/Services` contains survey, dispatch, security, maintenance, reporting, and integration workflows.
 - `HastaGeriBildirim/Repositories` contains Oracle persistence implemented with Dapper.
-- `HastaGeriBildirim/db` contains separate database install, hardening, verification, and demo scripts.
+- `HastaGeriBildirim/db` contains ordered admin, schema, reference-data, bootstrap, demo, and verification modules.
 - `HastaGeriBildirim/docs` contains deployment notes and requirement traceability.
 - `HastaGeriBildirim.Tests` covers tokens, PII cryptography, local sentiment, configuration validation, and report export.
 
@@ -76,10 +76,14 @@ From the repository root:
 
 ```powershell
 .\setup-local-db.ps1
-.\run-hgb-ui.ps1
+$env:ASPNETCORE_ENVIRONMENT = 'Development'
+$env:ConnectionStrings__OracleDb = 'User Id=patient_app;Password=OraclePass_12345;Data Source=127.0.0.1:1521/FREEPDB1;Connection Timeout=5;'
+dotnet run --project .\HastaGeriBildirim\HastaGeriBildirim.csproj -- --urls http://localhost:5080
 ```
 
-The setup script creates an Oracle Free container, installs the schema, and loads synthetic demo records. The application is then available at:
+The setup script starts a version-pinned Oracle Free container, waits for its
+SQL health check, and runs the same schema/demo manifests used by manual setup.
+The application is then available at:
 
 - `http://localhost:5080` for the login screen;
 - `http://localhost:5080/health/live` for the liveness check;
@@ -91,38 +95,49 @@ The local-only accounts are:
 - `kalite.demo / Kalite123!`
 - `birim.demo / Birim123!`
 
-To rebuild the local database:
+To delete and rebuild the local container and all of its data:
 
 ```powershell
 .\setup-local-db.ps1 -Reset
 ```
 
-`run-hgb-ui.ps1` uses `ConnectionStrings__OracleDb` when it is already set. Otherwise, it reads the default local `patient-oracle` container configuration. If you use custom `-Port`, `-ContainerName`, or `-AppPassword` values, set the connection string printed by the setup script before starting the application.
+If you use custom `-Port`, `-AppPassword`, or `-OracleImage` values, use the
+connection string printed by the setup script before starting the application.
 
 ## Use an Existing Oracle Database
 
-SQL*Plus or SQLcl is required for this path.
+SQL*Plus or SQLcl is required. The database setup uses separate modules so each
+step can be reviewed, rerun, and resumed after a failure.
 
-1. Create or unlock the application user as `SYSTEM`:
-
-   ```text
-   sqlplus system/<password>@//host:1521/<service> @HastaGeriBildirim/db/setup-oracle-permissions.sql "<app-password>"
-   ```
-
-2. Install the schema as `patient_app`:
-
-   ```sql
-   @HastaGeriBildirim/db/install-production.sql
-   ```
-
-   Use `install-demo.sql` instead only in a local environment that needs synthetic users and records. The `install-production.sql` name describes the non-demo install path; it is not, by itself, a production-readiness guarantee.
-
-3. Set the connection string and start the application:
+1. Set the client encoding and run the two DBA modules for the application
+   schema and approved tablespace:
 
    ```powershell
-   $env:ConnectionStrings__OracleDb = 'User Id=patient_app;Password=<app-password>;Data Source=host:1521/<service>;'
-   .\run-hgb-ui.ps1
+   $env:NLS_LANG = '.AL32UTF8'
    ```
+
+2. As `patient_app`, run numbered schema, index, view, foreign-key,
+   reference-data, and verification modules in the documented order.
+
+3. For Production, generate a bcrypt hash with
+   `--generate-password-hash`, run the separate first-admin bootstrap,
+   execute the Production verifier, and revoke install-only DDL privileges.
+
+The [database module guide](HastaGeriBildirim/db/README.md) lists the module
+order, dependencies, rerun steps, demo restrictions, and optional manifests.
+Do not run `db/demo/` files in Production.
+
+For local/development use with an existing Oracle database, set the connection
+string and start the Development runner:
+
+   ```powershell
+   $env:ASPNETCORE_ENVIRONMENT = 'Development'
+   $env:ConnectionStrings__OracleDb = 'User Id=patient_app;Password=<app-password>;Data Source=host:1521/<service>;'
+   dotnet run --project .\HastaGeriBildirim\HastaGeriBildirim.csproj -- --urls http://localhost:5080
+   ```
+
+For Production, follow the
+[IIS production runbook](HastaGeriBildirim/docs/production-runbook.md).
 
 ## Build and Test
 
@@ -138,7 +153,7 @@ Stop the local UI before rebuilding in the same Windows workspace because the ru
 
 - This is an internship implementation, not official documentation for a deployed Probel HBYS system.
 - Anonymous responses are supported as an option; not every survey response is anonymous.
-- The local sentiment analyzer is an explainable fallback, not a clinical model.
+- The local sentiment analyzer is a small rule-based fallback, not a clinical model.
 - The project does not generate automated patient-facing replies or provide external institution benchmarking.
 - A real deployment would still require approved integration contracts, environment-specific security review, monitoring, load testing, and operational acceptance.
 

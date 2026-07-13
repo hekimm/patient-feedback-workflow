@@ -77,7 +77,7 @@ This checklist maps the requirement analysis document to source-level evidence. 
 | NFR-504 KVKK compliance | Implemented | consent, retention, DSR, audit, anonymization |
 | NFR-601 integration resilience | Implemented | timeout/retry/backoff, HMAC signatures, replay protection |
 | NFR-602 browser support | Implemented | no external CDN, standards-based HTML/CSS/JS |
-| NFR-603 database | Implemented | idempotent Oracle install/hardening scripts |
+| NFR-603 database | Implemented | idempotent modular Oracle install and contract verification scripts |
 | NFR-801 deployment environment | Implemented | on-prem IIS `web.config`, runbook; cloud-compatible source |
 
 ## Explicitly Out Of Scope

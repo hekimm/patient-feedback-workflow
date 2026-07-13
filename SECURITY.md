@@ -16,11 +16,11 @@ Use environment variables or a managed secret store for:
 - webhook API key and HMAC secret
 - SMS, WhatsApp and BI provider credentials
 
-`appsettings.Production.json` and `.env.example` intentionally contain empty values.
+`appsettings.Production.json` and `.env.example` contain empty values. Set production values outside the repository.
 
 ## Demo Data
 
-`HastaGeriBildirim/db/demo-seed.sql` and `set-demo-password-hashes.sql` are for local/demo use only. Production startup rejects active demo users.
+Everything under `HastaGeriBildirim/db/demo/` is for local/demo use only. Production startup rejects active demo users.
 
 All data in this repository and its local demo environment is mock data. It does not represent real people, patients, institutions, or production records.
 

@@ -1,22 +1,33 @@
-# Hasta Geri Bildirim Production Runbook
+# Hasta Geri Bildirim production runbook
 
-## Target
+## Target and release boundary
 
-On-prem Windows/IIS + Oracle. Docker is only for local demo/test.
+The target is on-prem Windows/IIS with an Oracle PDB using `AL32UTF8`.
+Docker is only for local demo/test. A production release includes three
+separate operations: database modules, environment/secret configuration, and
+IIS deployment.
 
-## Required Environment Variables
+For manual installation, use the module order in
+[`db/README.md`](../db/README.md). The `install-production.sql` manifest is
+available for optional automation.
 
-Set these outside the repository through IIS environment variables, machine/user environment, or a secret store:
+## Required environment configuration
+
+Set values outside the repository through IIS configuration, machine/user
+environment, or an approved secret store. The repository's `.env.example` is
+an inventory only and is not loaded automatically.
+
+Required application values:
 
 - `ASPNETCORE_ENVIRONMENT=Production`
 - `ConnectionStrings__OracleDb`
-- `PublicBaseUrl`
+- `PublicBaseUrl` using the externally reachable HTTPS origin
 - `HGB_PII_ENCRYPTION_KEY`
 - `HGB_TOKEN_HASH_SALT`
 - `HGB_WEBHOOK_API_KEY`
 - `HGB_WEBHOOK_HMAC_SECRET`
 - `PROBEL_SMS_BASE_URL`
-- `PROBEL_SMS_API_KEY` or `PROBEL_SMS_BEARER_TOKEN`
+- either `PROBEL_SMS_API_KEY` or `PROBEL_SMS_BEARER_TOKEN`
 - `WHATSAPP_BASE_URL`
 - `WHATSAPP_BEARER_TOKEN`
 - `WHATSAPP_VERIFY_TOKEN`
@@ -24,60 +35,144 @@ Set these outside the repository through IIS environment variables, machine/user
 - `PROBEL_BI_BASE_URL`
 - `PROBEL_BI_BEARER_TOKEN`
 
-Production fails fast when required secrets, placeholder values, demo keys, or hardening tables are missing.
+The following four values must each contain at least 32 characters:
+`HGB_PII_ENCRYPTION_KEY`, `HGB_TOKEN_HASH_SALT`,
+`HGB_WEBHOOK_HMAC_SECRET`, and `WHATSAPP_APP_SECRET`.
 
-## Oracle Install Order
+Treat encryption keys and token salts as persistent data keys. Replacing them
+without an approved rotation/migration plan can make existing encrypted data or
+tokens unusable. Production startup rejects missing, placeholder, demo, or
+unsafe values.
 
-1. Create/unlock the application schema with least privilege.
-2. Run `db/install-production.sql` as `patient_app`.
-3. Do not run `db/install-demo.sql`, `db/demo-seed.sql` or `db/set-demo-password-hashes.sql` in Production.
-4. Confirm `/health/ready` returns `ready`.
+## Fresh Oracle installation
 
-## IIS Deployment
+Before starting:
 
-1. Publish:
+1. Back up the target schema/database.
+2. Confirm the connection targets the intended PDB, not `CDB$ROOT`.
+3. Set `NLS_LANG=.AL32UTF8` in the SQL*Plus/SQLcl process.
+4. Select the approved application tablespace and quota policy.
+5. Keep the application pool stopped until all verification passes.
 
-   ```powershell
-   dotnet publish .\HastaGeriBildirim\HastaGeriBildirim.csproj -c Release -o C:\inetpub\hgb
-   ```
+Connect as the DBA so its password is prompted rather than included in the
+process list. Run the two admin modules separately. The quota argument accepts
+`UNLIMITED` or a positive value such as `500M` or `2G`.
 
-2. Configure the IIS app pool:
+```text
+sqlplus -L system@//host:1521/<pdb-service>
 
-   - No Managed Code
-   - 64-bit enabled
-   - Identity with Oracle network access
-   - HTTPS binding only
+@HastaGeriBildirim/db/admin/001-create-application-user.sql "<app-password>"
+@HastaGeriBildirim/db/admin/002-grant-application-privileges.sql <app-tablespace> <quota>
+EXIT
+```
 
-3. Copy/set `web.config` from the project publish output.
-4. Set environment variables for the app pool.
-5. Recycle the app pool and check:
+Connect as `PATIENT_APP` (SQL*Plus prompts for its password), then run the
+current-state modules in this exact order:
 
-   - `/health/live`
-   - `/health/ready`
-   - login page
+```text
+sqlplus -L patient_app@//host:1521/<pdb-service>
 
-## Backup And Restore
+@HastaGeriBildirim/db/000-preflight.sql
+@HastaGeriBildirim/db/schema/001-foundation.sql
+@HastaGeriBildirim/db/schema/002-access-control.sql
+@HastaGeriBildirim/db/schema/003-survey-design.sql
+@HastaGeriBildirim/db/schema/004-delivery.sql
+@HastaGeriBildirim/db/schema/005-feedback-recovery.sql
+@HastaGeriBildirim/db/schema/006-operations.sql
+@HastaGeriBildirim/db/schema/007-indexes.sql
+@HastaGeriBildirim/db/schema/008-views.sql
+@HastaGeriBildirim/db/schema/009-foreign-keys.sql
+@HastaGeriBildirim/db/data/001-access-reference.sql
+@HastaGeriBildirim/db/data/002-channel-reference.sql
+@HastaGeriBildirim/db/data/003-survey-reference.sql
+@HastaGeriBildirim/db/verify/001-schema-contract.sql
+@HastaGeriBildirim/db/verify/002-reference-data.sql
+```
 
-- Back up Oracle schema before each migration.
-- Back up IIS publish folder before each release.
-- Rollback path:
-  - Restore previous IIS publish folder.
-  - Restore Oracle backup if a schema migration was applied and cannot be forward-fixed.
+Do not run anything under `db/demo/` or `install-demo.sql` in Production.
+Fresh production modules do not load a synthetic institution or a localhost
+DB URL.
 
-## Operational Checks
+### Bootstrap the first administrator
 
-- Readiness: `GET /health/ready`
-- Liveness: `GET /health/live`
-- Webhook HMAC headers for HGB APIs:
-  - `X-HGB-API-Key`
-  - `X-HGB-Timestamp`
-  - `X-HGB-Signature`
-- WhatsApp POST signature:
-  - `X-Hub-Signature-256`
+The UI requires an existing `SYS_ADMIN` to manage users. Generate the initial
+bcrypt hash through the application helper:
 
-## Security Notes
+```powershell
+dotnet run --project .\HastaGeriBildirim\HastaGeriBildirim.csproj -- --generate-password-hash
+```
 
-- No production secret is stored in source.
-- PII phone/email fields are encrypted and lookup hashes are used.
-- Personal-data export and DSR operations write audit logs with hashed IP.
-- Security headers and production error page are enabled by default.
+Run the bootstrap and production checks as `PATIENT_APP`:
+
+```text
+@HastaGeriBildirim/db/bootstrap/001-create-admin.sql admin "<bcrypt-hash>" "System Administrator" "admin@example.org"
+@HastaGeriBildirim/db/verify/004-production.sql
+EXIT
+```
+
+Store the plaintext password only in the approved credential channel. The SQL
+script receives and stores only its bcrypt hash.
+
+Finally, remove install-only DDL permissions as the DBA:
+
+```text
+sqlplus -L system@//host:1521/<pdb-service>
+
+@HastaGeriBildirim/db/admin/003-revoke-install-privileges.sql
+EXIT
+```
+
+For a later database release, run admin step 002 before the reviewed database
+changes and run step 003 after verification.
+
+Oracle DDL commits automatically, so the full installation cannot be rolled
+back as one transaction. Use a backup restore or a reviewed forward fix.
+
+## IIS deployment
+
+Publish:
+
+```powershell
+dotnet publish .\HastaGeriBildirim\HastaGeriBildirim.csproj -c Release -o C:\inetpub\hgb
+```
+
+Configure the IIS application pool:
+
+- No Managed Code
+- 64-bit enabled
+- identity with Oracle network access
+- HTTPS binding only
+- required environment variables available to the worker process
+
+Use the generated `web.config`, recycle the pool, and check in order:
+
+1. `GET /health/live`
+2. `GET /health/ready`
+3. the login page using the bootstrap administrator
+4. a generated survey link uses the approved public HTTPS host
+
+## Rollback and recovery
+
+Before every release, back up both the Oracle schema and the existing IIS
+publish directory.
+
+- If only application binaries changed, restore the previous IIS publish
+  directory.
+- If database modules changed and cannot be forward-fixed safely, stop the app,
+  restore the approved Oracle backup, restore the matching IIS build, and rerun
+  readiness checks.
+- Never run demo seeds to repair a production login or reference-data problem.
+
+## Operational checks
+
+- readiness: `GET /health/ready`
+- liveness: `GET /health/live`
+- HGB webhook headers: `X-HGB-API-Key`, `X-HGB-Timestamp`,
+  `X-HGB-Signature`
+- WhatsApp signature: `X-Hub-Signature-256`
+- database acceptance: `db/verify/001-schema-contract.sql`,
+  `002-reference-data.sql`, and `004-production.sql`
+
+Production secrets are not stored in source. PII phone/email values use
+encrypted fields and lookup hashes; personal-data and DSR operations are
+audited.
