@@ -108,7 +108,6 @@ public class PiiCryptoService : IPiiCryptoService
         {
         }
 
-        // Derive a 32-byte key when the configured value is not a valid AES key.
         return SHA256.HashData(Encoding.UTF8.GetBytes(configuredKey));
     }
 

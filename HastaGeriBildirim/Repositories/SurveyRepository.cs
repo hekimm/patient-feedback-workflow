@@ -290,7 +290,6 @@ public class SurveyRepository
     {
         using var connection = _connectionFactory.CreateConnection();
 
-        // Replace an earlier answer for the same question.
         var deleteSql = @"
             DELETE FROM HGB_SURVEY_ANSWERS
             WHERE RESPONSE_ID = :ResponseId AND QUESTION_ID = :QuestionId";

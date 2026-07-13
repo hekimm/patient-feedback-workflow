@@ -3,15 +3,24 @@ bin/
 obj/
 **/bin/
 **/obj/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+artifacts/
 
 # Local runtime/log files
 logs/
 *.log
-hgb-ui.*.log
 
 # User/machine specific files
 .vs/
 .vscode/
+.idea/
 *.user
 *.suo
 *.userosscache
@@ -20,6 +29,7 @@ hgb-ui.*.log
 # Secrets and local overrides
 appsettings.Development.json
 appsettings.Local.json
+secrets.json
 !HastaGeriBildirim/appsettings.Production.json
 *.local.json
 .env
@@ -31,6 +41,10 @@ TestResults/
 coverage/
 coverage.*
 *.trx
+*.cache
+*.lock.json
+project.lock.json
+project.fragment.lock.json
 
 # NuGet/packages
 *.nupkg
